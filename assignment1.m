@@ -1,7 +1,7 @@
 1;
 
 ### TODOS ###
-# 1. input validation
+# "right-looking" unblocked LU?
 # 2. result evaluation
 # 3. perf. optimization
 #   3. 1. loop order (mult. sequence?s)
@@ -122,31 +122,8 @@ end
 
 # Evaluates results of blocked LU decomposition.
 function [rn, foe, fae, t] = pluStats(A, n)
-end
-
-# Evaluate results of unblocked LU decomposition.
-function [rn, foe, fae, t] = upluStats(A, n)
-end
-
-
-#####################################
-# Run LU decomposition & evaluation.
-#####################################
-
-
-problem_sizes = 100:100:500;
-rel_residuals = zeros(size(problem_sizes));
-rel_fw_errors = zeros(size(problem_sizes));
-rel_factorization_errors = zeros(size(problem_sizes));
-
-for i = 1:size(problem_sizes)(2)
-    printf('#%i\n', i)
-    n = problem_sizes(i);
-
-    # Generate random non-singular matrix of rank n.
-    A = generate_random_nonsingular_matrix(n);
-    
     # Decompose into L, U and P.
+    start_time = cputime();
     [LU, P] = plu(A, n);
 
     # Extract L and U from returned matrix.
@@ -155,21 +132,86 @@ for i = 1:size(problem_sizes)(2)
     # Set diagonale of L to 1.
     L(1:1 + size(L, 1):end) = 1;
 
-    # Compute relative factorization error.
-    rel_factorization_errors(i) = compute_relative_delta_with_denominator(P * A, L * U, A, n);
-
+    t = cputime() - start_time;
+    
     # Determine b so that x is vector of ones.
     x = ones([n 1]);
     b = A * x;
     y = L \ (P * b);
     x_calc = U \ y;
     
-    # Solve system.
-    # calc. of rel. res. correct?
-    rel_residuals(i) = compute_relative_delta(A * x_calc, b, n);
-    rel_fw_errors(i) = compute_relative_delta(x_calc, x, n);
+    # Compute relative factorization error.
+    fae = compute_relative_delta_with_denominator(P * A, L * U, A, n);
+    rn = compute_relative_delta(A * x_calc, b, n);
+    foe = compute_relative_delta(x_calc, x, n);
 end
 
-rel_factorization_errors
-rel_fw_errors
-rel_residuals
+# Evaluate results of unblocked LU decomposition.
+function [rn, foe, fae, t] = upluStats(A, n)
+end
+
+function plot_results(rn, foe, fae, t, n, block_str)
+    figure('Position',[0, 0, 800, 250])
+    grid on
+    hold on
+
+    # Plot residuals. Ignore warnings for now since otherwise we'll get some of them due to some deltas being 0.
+    #warning('off','all');
+    semilogy(n, rn, '1; Rel. residual norm;.-');
+    semilogy(n, foe, "markersize", 3, '1; Rel. forward error;o-');
+    semilogy(n, fae, '3; Rel. factorization error;.-');
+    legend ({
+            "Rel. residual norm", 
+            "Rel. forward error", 
+            "Rel. factorization error"
+        }, "location", "eastoutside")
+    title (strcat("Error metrics for ", block_str), "fontsize", 16);
+
+    figure('Position',[0, 0, 800, 250])
+    grid on
+    hold off
+    semilogy(n, t, "markersize", 3, '3; Runtime;o-');
+    legend ({"Runtime in seconds"}, "location", "eastoutside")
+    title (strcat("Runtimes for ", block_str), "fontsize", 16);
+end
+
+
+#####################################
+# Run LU decomposition & evaluation.
+#####################################
+
+
+problem_sizes = 100:100:400;
+rel_residuals_unblocked = zeros(size(problem_sizes));
+rel_fw_errors_unblocked = zeros(size(problem_sizes));
+rel_factorization_errors_unblocked = zeros(size(problem_sizes));
+runtimes_unblocked = zeros(size(problem_sizes));
+rel_residuals_blocked = zeros(size(problem_sizes));
+rel_fw_errors_blocked = zeros(size(problem_sizes));
+rel_factorization_errors_blocked = zeros(size(problem_sizes));
+runtimes_blocked = zeros(size(problem_sizes));
+
+for i = 1:size(problem_sizes)(2)
+    printf('#%i\n', i)
+    n = problem_sizes(i);
+
+    # Generate random non-singular matrix of rank n.
+    A = generate_random_nonsingular_matrix(n);
+
+    # Execute unblocked LU decomposition.
+    [ ...
+        rel_residuals_unblocked(i),  ...
+        rel_fw_errors_unblocked(i),  ...
+        rel_factorization_errors_unblocked(i),  ...
+        runtimes_unblocked(i) ...
+    ] = pluStats(A, n);
+end
+
+plot_results(
+    rel_residuals_unblocked, 
+    rel_fw_errors_unblocked, 
+    rel_factorization_errors_unblocked, 
+    runtimes_unblocked, 
+    problem_sizes,
+    "unblocked"
+)
