@@ -63,32 +63,28 @@ function [A, P] = uplu(A, n)
 
     # todo Determine block size r.
     # todo What if block size b is not a divisor of A respectively n? Check for that.    
-    [L, U] = recursive_block_lu(A, n, 5);
-    A = 0;
+    [A, P] = recursive_block_lu(A, n, 5);
     P = 0;
 
+    L = tril(A, -1);
+    L(1:size(L)(1) + 1:end) = 1;
+    U = triu(A, 0);
     printf("***** %f \n", sum(sum(L * U - A_orig)))
 end
 
-function [L, U] = recursive_block_lu(A, n, r)
+function [A, P] = recursive_block_lu(A, n, r)
+    P = 0;
+    
     if (n <= r)
         # 3.2.1
-        A_tmp = A;
         for (k = 1:n - 1)
             rho = k + 1:n;
             A(rho, k) /= A(k, k);
             A(rho, rho) -= A(rho, k) * A(k, rho);
         end
 
-        L = tril(A, -1);
-        L(1:size(A)(1) + 1:end) = 1;
-        U = triu(A, 0);
-        sum(sum(L * U - A_tmp))
     else
-        # 3.2.8
-        A_tmp = A(:, 1:r);
-
-        # LU-decompose A(:, 1:r).
+        # 3.2.8: LU-decompose A(:, 1:r).
         for k = 1:r
             rho = k + 1:n;
             A(rho, k) /= A(k, k);
@@ -105,22 +101,21 @@ function [L, U] = recursive_block_lu(A, n, r)
         L11(1:size(L11)(1) + 1:end) = 1;
         U11 = triu(LU11, 0);
         L21 = A(r + 1:end, 1:r);
-        sum(sum([L11; L21] * U11 - A_tmp))
         
         # Solve for U12.
         U12 = L11 \ A(1:r, r + 1:n);
-        printf("***** %f \n", sum(sum(L11 * U12 - A(1:r, r + 1:n))))
         
-        # transpose(U12) correct? If not, why wrong shape?
-        # todo possible bug here
         # Compute A_tilde.
         A_tilde = A(r + 1:n, r + 1:n) - L21 * U12;
 
-        [L22, U22] = recursive_block_lu(A_tilde, n - r, r);
-
-        # Ensemble L, U.
-        L = [L11, zeros(r, n - r); L21, L22];
-        U = [U11, U12; zeros(n - r, r), U22];
+        # Repeat for submatrix; ensemble L and U.
+        [A_sub, P] = recursive_block_lu(A_tilde, n - r, r);
+        A = [
+            # L11, [0]; L21, L22
+            tril(LU11, -1), zeros(r, n - r); L21, tril(A_sub, -1)] + ...
+            # U11, U12; [0], U22
+            [U11, U12; zeros(n - r, r), triu(A_sub, 0)
+        ];
     endif
 end
 
