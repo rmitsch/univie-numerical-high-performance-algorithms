@@ -6,6 +6,7 @@
 # 3. perf. optimization
 #   3. 1. loop order (mult. sequence?s)
 #   3. 2. blocking
+# calc. all matrix changes in place
 
 # Generate random non-singular matrix.
 function A = generate_random_nonsingular_matrix(n)
@@ -58,17 +59,33 @@ end
 function [A, P] = uplu(A, n)
     validate_A(A);
     validate_n(n);
+    A_orig = A
 
     # todo Determine block size r.
     # todo What if block size b is not a divisor of A respectively n? Check for that.    
-    [A, P, L, U] = recursive_block_lu(A, n, 5);
+    [L, U] = recursive_block_lu(A, n, 5);
+    A = 0;
+    P = 0;
+    #L
+    #U
+    sum(sum(L * U - A_orig))
+    
+    disp("after recursion")
 end
 
-function [A, P, L, U] = recursive_block_lu(A, n, r)
-    P = 0;
-    L = 0;
-    U = 0;
-     
+function [A] = luhack(A, n, r)
+    for k = 1:r
+        rho = k + 1:n;
+        A(rho, k) /= A(k, k);
+        
+        if (k < r)
+            mu = k + 1:r;
+            A(rho, mu) -= A(rho, k) * A(k, mu);
+        endif
+    end
+end
+
+function [L, U] = recursive_block_lu(A, n, r)
     if (n <= r)
         # 3.2.1
         for (k = 1:n - 1)
@@ -76,34 +93,58 @@ function [A, P, L, U] = recursive_block_lu(A, n, r)
             A(rho, k) /= A(k, k);
             A(rho, rho) -= A(rho, k) * A(k, rho);
         end
+
+        L = tril(A, -1);
+        L(1:size(A)(1) + 1:end) = 1;
+        U = triu(A, 0);
     else
-        disp("n > r")
         # 3.2.8
-        blub = A(:, 1:r);
-        for k = 1:r
-            rho = k + 1:n;
-            A(rho, k) /= A(k, k);
-            
-            if (k < r)
-                mu = k + 1:r;
-                A(rho, mu) -= A(rho, k) * A(k, mu);
-            endif
-        end
-        disp("HERE")
+        A_tmp = A(:, 1:r);
 
-        L11 = A(1:r, 1:r);
-        L21 = A(r + 1:n, 1:r);
-        U12 = L11 \ A(1:r, r + 1:n);
-        A_tilde = A(r + 1:n, r + 1:n) - L21 * U12;
+        [LU] = luhack(A_tmp, size(A_tmp)(1), r)
+        LU11 = LU(1:r, :);
+        L11 = tril(LU11, -1);
+        L11(1:size(L11)(1) + 1:end) = 1;
+        U11 = triu(LU11, 0);
+        L21 = LU(r + 1:end, :);
+        sum(sum([L11; L21] * U11 - A_tmp))
+        
 
-        A(:, 1:r)
+        # Decompose A11 into L11 and U11.
+        #A11 = A(1:r, 1:r);
+        #[LU11] = luhack(A11, size(A11)(1), r);
+        #L11 = tril(LU11, -1);
+        #L11(1:size(A11)(1) + 1:end) = 1;
+        #U11 = triu(LU11, 0);
+        #sum(sum(L11 * U11 - A11))
 
-        # L11 U12 = A(...)
-        # Assignment to A prime
-        # Recursive call
+        # Decompose A21 into L21 and U21.
+        #A21 = A(r + 1:end, 1:r);
+        #[LU21] = luhack(A21, size(A21)(1), r);
+        #U21 = triu(LU21(1:r, :), 0);
+        #L21 = tril(LU21, -1);
+        #L21(1:size(L21)(1) + 1:end) = 1;
+        #sum(sum(L21 * U21 - A21))
+        #L21 = LU21;
 
-        # Set L, U resp. A.
-        2
+        # Update A with result of partial LU decomposition.
+        #A(:, 1:r) = [L11; L21] * U11;
+
+        # Calculate U12.
+        # todo possible bug here
+        #U12 = A(1:r, r + 1:n) \ L11;
+        
+        # transpose(U12) correct? If not, why wrong shape?
+        # todo possible bug here
+        #A_tilde = A(r + 1:n, r + 1:n) - L21 * transpose(U12);
+
+        #[L22, U22] = recursive_block_lu(A_tilde, n - r, r);
+
+        # Ensemble L, U.
+        L = 0;
+        U = 0;
+        #L = [L11, zeros(r, n - r); L21, L22];
+        #U = [U11, transpose(U12); zeros(n - r, r), U22];
     endif
 end
 
@@ -161,7 +202,6 @@ function [rn, foe, fae, t] = stats(A, n, lu_routine)
     # Decompose into L, U and P.
     start_time = tic;
     [LU, P] = lu_routine(A, n);
-    disp("after LU decomposition")
     return
 
     # Extract L and U from returned matrix.
