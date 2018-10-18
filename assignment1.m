@@ -1,12 +1,10 @@
 1;
 
 ### TODOS ###
-# "right-looking" unblocked LU?
-# 2. result evaluation
+# variable, not divisible block size?
 # 3. perf. optimization
 #   3. 1. loop order (mult. sequence?s)
-#   3. 2. blocking
-# calc. all matrix changes in place
+#   3. 2. blocking - block size?
 
 # Generate random non-singular matrix.
 function A = generate_random_nonsingular_matrix(n)
@@ -46,11 +44,12 @@ function [A, P] = plu(A, n)
         end        
         
         if A(k, k) != 0
+            rho = k + 1:n;
+
             # Compute subdiagonal entries of L, store in A's subdiagonale instead of M.
-            A(k + 1:n, k) = (A(k + 1:n, k) / A(k, k));
-            
+            A(rho, k) /= A(k, k);
             # Apply elimination matrix (implicitly; by using values stored in A).
-            A(k + 1:n, k + 1:n) -= A(k + 1:n, k) .* A(k, k + 1:n);    
+            A(rho, rho) -= A(rho, k) .* A(k, rho);    
         end        
     end
 end
@@ -64,12 +63,11 @@ function [A, P] = uplu(A, n)
     # todo Determine block size r.
     # todo What if block size b is not a divisor of A respectively n? Check for that.    
     [A, P] = recursive_block_lu(A, n, 5);
-    P = 0;
 
     L = tril(A, -1);
     L(1:size(L)(1) + 1:end) = 1;
     U = triu(A, 0);
-    printf("***** %f \n", sum(sum(L * U - A_orig)))
+    printf("delta = %f \n", compute_relative_delta(L * U, A_orig, n));
 end
 
 function [A, P] = recursive_block_lu(A, n, r)
@@ -77,6 +75,8 @@ function [A, P] = recursive_block_lu(A, n, r)
     
     if (n <= r)
         # 3.2.1
+        #[A, P] = plu(A, n);
+
         for (k = 1:n - 1)
             rho = k + 1:n;
             A(rho, k) /= A(k, k);
@@ -171,7 +171,8 @@ end
 
 function [rn, foe, fae, t] = stats(A, n, lu_routine)
     # Decompose into L, U and P.
-    start_time = tic;
+    tic_id = tic;
+
     [LU, P] = lu_routine(A, n);
     return
 
@@ -181,7 +182,7 @@ function [rn, foe, fae, t] = stats(A, n, lu_routine)
     # Set diagonale of L to 1.
     L(1:1 + size(L, 1):end) = 1;
 
-    t = toc - start_time;
+    t = toc(tic_id);
     
     # Determine b so that x is vector of ones.
     x = ones([n 1]);
@@ -247,19 +248,18 @@ rel_factorization_errors_blocked = zeros(size(problem_sizes));
 runtimes_blocked = zeros(size(problem_sizes));
 
 for i = 1:size(problem_sizes)(2)
-    printf('#%i\n', i)
-    n = problem_sizes(i);
+    printf('#%i\n', i);
 
     # Generate random non-singular matrix of rank n.
-    A = generate_random_nonsingular_matrix(n);
+    A = generate_random_nonsingular_matrix(problem_sizes(i));
 
     # Execute unblocked LU decomposition.
-    #[ ...
-    #    rel_residuals_unblocked(i),  ...
-    #    rel_fw_errors_unblocked(i),  ...
-    #    rel_factorization_errors_unblocked(i),  ...
-    #    runtimes_unblocked(i) ...
-    #] = pluStats(A, n);
+    % [ ...
+    %     rel_residuals_unblocked(i),  ...
+    %     rel_fw_errors_unblocked(i),  ...
+    %     rel_factorization_errors_unblocked(i),  ...
+    %     runtimes_unblocked(i) ...
+    % ] = pluStats(A, problem_sizes(i));
 
     # Execute blocked LU decomposition.
     [ ...
@@ -267,7 +267,7 @@ for i = 1:size(problem_sizes)(2)
         rel_fw_errors_blocked(i),  ...
         rel_factorization_errors_blocked(i),  ...
         runtimes_blocked(i) ...
-    ] = upluStats(A, n);
+    ] = upluStats(A, problem_sizes(i));
 end
 
 #plot_results(
