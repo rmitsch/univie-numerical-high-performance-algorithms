@@ -12,20 +12,28 @@ function A = generate_random_nonsingular_matrix(n)
 end
 
 function [A, P] = pivoted_lu(A, n, r = -1)
+    max_row = n - 1;
+    row_cap = n;
+    if (r != -1)
+        max_row = r;
+        row_cap = r;
+    endif
+
+
     # Initialize permutation matrix P.
     P = eye(n);
      
-    for k = 1:n - 1
+    for k = 1:max_row
         # Initialize permutation matrix P_k for this step.
         P_k = eye(n);
 
         # Fetch all elements we want to investigate to find |a_pk| >= |a_ik| -> index of maximum on or below the diagonale.
-        [p_value, p_index] = max(abs(A(k:n, k)));
+        [p_value, p_index] = max(abs(A(k:row_cap, k)));
         # Add offset.
         p_index += k - 1;
         
         # Swap rows if there is a bigger value underneath the diagonale.
-        if p_index != k
+        if (p_index != k)
             # Swap rows.
             A([p_index, k], :) = A([k, p_index], :);
             
@@ -39,7 +47,7 @@ function [A, P] = pivoted_lu(A, n, r = -1)
             P = P_k * P;
         end        
         
-        if A(k, k) != 0
+        if (A(k, k) != 0)
             rho = k + 1:n;
 
             # Compute subdiagonal entries of L, store in A's subdiagonale instead of M.
@@ -71,12 +79,12 @@ function [A, P] = uplu(A, n)
     A_orig = A;
 
     # todo What if block size b is not a divisor of A respectively n? Check for that.    
-    [A, P] = recursive_block_lu(A, n, 5);
+    [A, P] = recursive_block_lu(A, n, 10);
 
-    L = tril(A, -1);
-    L(1:size(L)(1) + 1:end) = 1;
-    U = triu(A, 0);
-    printf("delta = %f \n", compute_relative_delta(L * U, P * A_orig, n));
+    #L = tril(A, -1);
+    #L(1:size(L)(1) + 1:end) = 1;
+    #U = triu(A, 0);
+    #printf("delta = %f \n", compute_relative_delta(L * U, P * A_orig, n));
 end
 
 function [A, P] = recursive_block_lu(A, n, r)
@@ -86,47 +94,12 @@ function [A, P] = recursive_block_lu(A, n, r)
 
     else
         # 3.2.8: LU-decompose A(:, 1:r).
-        P = eye(n);
-        
-        LU = A(:, 1:r); 
-        A1121_orig = A(:, 1:r);
-        for k = 1:r
-            # Initialize permutation matrix P_k for this step.
-            P_k = eye(n);
+        [LU, P] = pivoted_lu(A(:, 1:r), n, r);
 
-            # Fetch all elements we want to investigate to find |a_pk| >= |a_ik| -> index of maximum on or below the diagonale.
-            [p_value, p_index] = max(abs(LU(k:r, k)));
-            # Add offset.
-            p_index += k - 1;
-            
-            # Swap rows if there is a bigger value underneath the diagonale.
-            if p_index != k
-                LU([p_index, k], :) = LU([k, p_index], :);
-                
-                # Save step in temporary permutation matrix.
-                P_k(p_index, k) = 1;
-                P_k(k, p_index) = 1;
-                P_k(k, k) = 0;
-                P_k(p_index, p_index) = 0;
-                
-                # Update permutation matrix.
-                P = P_k * P;
-            end        
-            
-            if LU(k, k) != 0
-                rho = k + 1:n;
-                LU(rho, k) /= LU(k, k);
-              
-                if (k < r)
-                    mu = k + 1:r;
-                    LU(rho, mu) -= LU(rho, k) * LU(k, mu);
-                endif
-            end        
-        end        
-
-        A1222 = P * A(:, r + 1:n);
-        A12_permutated = A1222(1:r, :);
-        A21_permutated = A1222(r + 1:n, :);
+        # Get permutated versions of A12 and A21.
+        A1222_P = P * A(:, r + 1:n);
+        A12_P = A1222_P(1:r, :);
+        A21_P = A1222_P(r + 1:n, :);
         
         # Extract L11, L21 and U11.
         LU11 = LU(1:r, 1:r);
@@ -136,10 +109,10 @@ function [A, P] = recursive_block_lu(A, n, r)
         L21 = LU(r + 1:end, 1:r);
 
         # Solve for U12.
-        U12 = L11 \ A12_permutated; #A(1:r, r + 1:n);
+        U12 = L11 \ A12_P;
         
         # Compute A_tilde.
-        A_tilde = A21_permutated - L21 * U12; # A(r + 1:n, r + 1:n) - L21 * U12;
+        A_tilde = A21_P - L21 * U12;
 
         # Repeat for submatrix; ensemble L and U.
         [A_sub, P_sub] = recursive_block_lu(A_tilde, n - r, r);
@@ -150,42 +123,10 @@ function [A, P] = recursive_block_lu(A, n, r)
             [U11, U12; zeros(n - r, r), triu(A_sub, 0)
         ]; 
 
+        # Update permutation matrix with sub-matrix' permutation matrix.
         P_prime = eye(n);
         P_prime(r + 1:n, r + 1:n) = P_sub;
         P = P_prime * P;
-    endif
-end
-
-function [A, P] = recursive_block_lu_X(A, n, r)
-    if (n <= r)
-        # 3.2.1
-        [A, P] = plu(A, n);
-
-    else
-        # 3.2.8: LU-decompose A(:, 1:r).
-        [A, P] = pivoted_lu(A, n, r);
-
-        # Extract L11, L21 and U11.
-        LU11 = A(1:r, 1:r);
-        L11 = tril(LU11, -1);
-        L11(1:size(L11)(1) + 1:end) = 1;
-        U11 = triu(LU11, 0);
-        L21 = A(r + 1:end, 1:r);
-        
-        # Solve for U12.
-        U12 = L11 \ A(1:r, r + 1:n);
-        
-        # Compute A_tilde.
-        A_tilde = A(r + 1:n, r + 1:n) - L21 * U12;
-
-        # Repeat for remaining submatrix; ensemble L and U.
-        [A_sub, P_sub] = recursive_block_lu(A_tilde, n - r, r);
-        A = [
-            # L11, [0]; L21, L22
-            tril(LU11, -1), zeros(r, n - r); P_sub * L21, tril(A_sub, -1)] + ...
-            # U11, U12; [0], U22
-            [U11, U12; zeros(n - r, r), triu(A_sub, 0)
-        ];
     endif
 end
 
@@ -243,10 +184,8 @@ function [rn, foe, fae, t] = stats(A, n, lu_routine)
     # Decompose into L, U and P.
     tic_id = tic;
 
+    # Decompose A, extract L and U from returned matrix.
     [LU, P] = lu_routine(A, n);
-    #return
-
-    # Extract L and U from returned matrix.
     L = tril(LU, -1);
     U = triu(LU, 0);
     # Set diagonale of L to 1.
@@ -307,7 +246,7 @@ end
 #####################################
 
 
-problem_sizes = 15:15:15;
+problem_sizes = 100:100:1000;
 rel_residuals_unblocked = zeros(size(problem_sizes));
 rel_fw_errors_unblocked = zeros(size(problem_sizes));
 rel_factorization_errors_unblocked = zeros(size(problem_sizes));
@@ -318,7 +257,7 @@ rel_factorization_errors_blocked = zeros(size(problem_sizes));
 runtimes_blocked = zeros(size(problem_sizes));
 
 for i = 1:size(problem_sizes)(2)
-    printf('#%i\n', i);
+    printf('n = %i\n', problem_sizes(i));
 
     # Generate random non-singular matrix of rank n.
     A = generate_random_nonsingular_matrix(problem_sizes(i));
@@ -352,7 +291,7 @@ plot_results(
     " unblocked"
 )
 #}
-#{
+
 plot_results(
     rel_residuals_blocked, 
     rel_fw_errors_blocked, 
@@ -361,4 +300,3 @@ plot_results(
     problem_sizes,
     " blocked"
 )
-#}
