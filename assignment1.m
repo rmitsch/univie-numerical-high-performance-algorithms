@@ -80,16 +80,10 @@ function [A, P] = uplu(A, n)
 end
 
 function [A, P] = recursive_block_lu(A, n, r)
-    P = 0;
-
     if (n <= r)
         # 3.2.1
-        A_orig = A;
         [A, P] = pivoted_lu(A, n, -1);
-        #L = tril(A, -1);
-        #L(1:size(L)(1) + 1:end) = 1;
-        #U = triu(A, 0);
-        #printf("inner delta = %f \n", compute_relative_delta(L * U, P * A_orig, n));
+
     else
         # 3.2.8: LU-decompose A(:, 1:r).
         P = eye(n);
@@ -140,7 +134,6 @@ function [A, P] = recursive_block_lu(A, n, r)
         L11(1:size(L11)(1) + 1:end) = 1;
         U11 = triu(LU11, 0);
         L21 = LU(r + 1:end, 1:r);
-        sum(sum([L11; L21] * U11 - P * A1121_orig))
 
         # Solve for U12.
         U12 = L11 \ A12_permutated; #A(1:r, r + 1:n);
@@ -155,7 +148,11 @@ function [A, P] = recursive_block_lu(A, n, r)
             tril(LU11, -1), zeros(r, n - r); P_sub * L21, tril(A_sub, -1)] + ...
             # U11, U12; [0], U22
             [U11, U12; zeros(n - r, r), triu(A_sub, 0)
-        ];
+        ]; 
+
+        P_prime = eye(n);
+        P_prime(r + 1:n, r + 1:n) = P_sub;
+        P = P_prime * P;
     endif
 end
 
@@ -310,7 +307,7 @@ end
 #####################################
 
 
-problem_sizes = 10:10:10;
+problem_sizes = 15:15:15;
 rel_residuals_unblocked = zeros(size(problem_sizes));
 rel_fw_errors_unblocked = zeros(size(problem_sizes));
 rel_factorization_errors_unblocked = zeros(size(problem_sizes));
