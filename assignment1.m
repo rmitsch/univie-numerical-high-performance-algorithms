@@ -1,8 +1,3 @@
-#generate_random_nonsingular_matrix;
-#pluStats;
-#upluStats;
-#plot_results;
-
 #####################################
 # Run LU decomposition & evaluation.
 #####################################
