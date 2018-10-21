@@ -5,9 +5,9 @@ function plot_results(rn, foe, fae, t, n, block_str)
 
     # Plot residuals. Ignore warnings for now since otherwise we'll get some of them due to some deltas being 0.
     #warning('off','all');
-    semilogy(n, rn, '1; Rel. residual norm;.-');
-    semilogy(n, foe, "markersize", 3, '1; Rel. forward error;o-');
-    semilogy(n, fae, '3; Rel. factorization error;.-');
+    semilogy(n, rn, "marker", "x",  "markersize", 8, '1; Rel. residual norm;.-');
+    semilogy(n, foe, "marker", "+",  "markersize", 8, '2; Rel. forward error;o-');
+    semilogy(n, fae, "marker", "s",  "markersize", 8, '3; Rel. factorization error;.-');
     legend ({
             "Rel. residual norm", 
             "Rel. forward error", 

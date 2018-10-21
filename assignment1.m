@@ -3,7 +3,7 @@
 #####################################
 
 
-problem_sizes = 100:100:1200;
+problem_sizes = 100:100:1500;
 rel_residuals_unblocked = zeros(size(problem_sizes));
 rel_fw_errors_unblocked = zeros(size(problem_sizes));
 rel_factorization_errors_unblocked = zeros(size(problem_sizes));
@@ -36,8 +36,6 @@ for i = 1:size(problem_sizes)(2)
     ] = upluStats(A, problem_sizes(i));
     
 end
-#runtimes_blocked
-#runtimes_unblocked
 
 plot_results(
     rel_residuals_unblocked, 
@@ -47,7 +45,6 @@ plot_results(
     problem_sizes,
     " unblocked"
 )
-
 
 plot_results(
     rel_residuals_blocked, 
