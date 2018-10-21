@@ -12,16 +12,13 @@ function [rn, foe, fae, t] = stats(A, n, lu_routine)
     t = toc(tic_id);
     
     # Determine b so that x is vector of ones.
-    #x = ones([n 1]);
-    #b = A * x;
-    #y = L \ (P * b);
-    #x_calc = U \ y;
+    x = ones([n 1]);
+    b = A * x;
+    y = L \ (P * b);
+    x_calc = U \ y;
     
     # Compute relative factorization error.
-    #fae = compute_relative_delta_with_denominator(P * A, L * U, A, n);
-    #rn = compute_relative_delta(A * x_calc, b, n);
-    #foe = compute_relative_delta(x_calc, x, n);
-    fae = 0;
-    rn = 0;
-    foe = 0;
+    fae = compute_relative_delta_with_denominator(P * A, L * U, A, n);
+    rn = compute_relative_delta(A * x_calc, b, n);
+    foe = compute_relative_delta(x_calc, x, n);
 end

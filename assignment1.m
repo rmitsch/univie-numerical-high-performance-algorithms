@@ -19,8 +19,6 @@ for i = 1:size(problem_sizes)(2)
     # Generate random non-singular matrix of rank n.
     A = generate_random_nonsingular_matrix(problem_sizes(i));
 
-    
-    #{
     # Execute unblocked LU decomposition.
     [ ...
         rel_residuals_unblocked(i),  ...
@@ -28,7 +26,6 @@ for i = 1:size(problem_sizes)(2)
         rel_factorization_errors_unblocked(i),  ...
         runtimes_unblocked(i) ...
     ] = pluStats(A, problem_sizes(i));
-    #}
     
     # Execute blocked LU decomposition.
     [ ...
@@ -39,9 +36,9 @@ for i = 1:size(problem_sizes)(2)
     ] = upluStats(A, problem_sizes(i));
     
 end
-runtimes_blocked
+#runtimes_blocked
 #runtimes_unblocked
-#{
+
 plot_results(
     rel_residuals_unblocked, 
     rel_fw_errors_unblocked, 
@@ -60,4 +57,3 @@ plot_results(
     problem_sizes,
     " blocked"
 )
-#}

@@ -51,6 +51,9 @@ plot(problem_sizes, "marker", "x",  "markersize", 8, "linewidth", 1, runtimes(3,
 plot(problem_sizes, "marker", "s",  "markersize", 8, "linewidth", 1, runtimes(4, :), '4; b = 50;-');
 plot(problem_sizes, "marker", "d",  "markersize", 8, "linewidth", 1, runtimes(5, :), '5; b = 100;.-');
 
+ylabel("Runtime in seconds");
+xlabel("n");
+
 legend ({
         "b = 5", "b = 10", "b = 20", "b = 50", "b = 100", 
 }, "location", "eastoutside")
