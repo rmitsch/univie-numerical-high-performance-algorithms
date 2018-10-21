@@ -14,6 +14,8 @@ function plot_results(rn, foe, fae, t, n, block_str)
             "Rel. factorization error"
         }, "location", "eastoutside")
     title (strcat("Error metrics for ", block_str), "fontsize", 16);
+    ylabel("Metric value");
+    xlabel("n");
 
     figure('Position',[0, 0, 800, 250])
     grid on
