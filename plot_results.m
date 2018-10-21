@@ -1,4 +1,4 @@
-function plot_results(rn, foe, fae, t, n, block_str)
+function plot_results(rn, foe, fae, t, eff, n, block_str)
     figure('Position',[0, 0, 800, 250])
     grid on
     hold on
@@ -16,6 +16,15 @@ function plot_results(rn, foe, fae, t, n, block_str)
     title (strcat("Error metrics for ", block_str), "fontsize", 16);
     ylabel("Metric value");
     xlabel("n");
+
+    figure('Position',[0, 0, 800, 250])
+    grid on
+    hold off
+    semilogy(n, eff, "markersize", 3, '3; Efficiency;o-');
+    legend ({"Machine-independent efficiency    "}, "location", "eastoutside");
+    ylabel("Degree of efficiency");
+    xlabel("n");
+    title ("Machine-independent Efficiency", "fontsize", 16);
 
     figure('Position',[0, 0, 800, 250])
     grid on
