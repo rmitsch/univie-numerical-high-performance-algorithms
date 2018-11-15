@@ -3,7 +3,7 @@
 #####################################
 
 
-problem_sizes = 100:100:500;
+problem_sizes = 100:100:1500;
 rel_residuals_unblocked = zeros(size(problem_sizes));
 rel_fw_errors_unblocked = zeros(size(problem_sizes));
 rel_factorization_errors_unblocked = zeros(size(problem_sizes));
