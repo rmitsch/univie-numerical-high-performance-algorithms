@@ -106,3 +106,4 @@ venv.bak/
 *.txt
 
 /resources
+octave-workspace
