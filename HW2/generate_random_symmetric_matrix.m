@@ -8,5 +8,5 @@ function [A] = generate_random_symmetric_matrix(n)
 	   	% Copy lower triangular matrix to upper half of A.
 	   	A = tril(A) + tril(A,-1)';
 		A = A + double(n) * eye(n);
-	until (rcond(A) > 0.5)
+	until (rcond(A) > 0.3)
 end

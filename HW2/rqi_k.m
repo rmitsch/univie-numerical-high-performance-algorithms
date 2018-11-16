@@ -29,11 +29,11 @@ function [lambda, v, it, erreval, errres] = rqi_k(n, A, x0, sigma, eps, maxit, l
 	for it = 1:1:maxit
 		if (mod(it, k) == 0)
 			sigma = (transpose(v) * A * v) / (transpose(v) * v);
+
+			[L, U, P] = lu(A - sigma * I);
+			y = U \ (L \ (P * v));
 		endif
 
-		[L, U, P] = lu(A - sigma * I);
-		y = U \ (L \ (P * v));
-		
 		y_norm = norm(y, Inf); 
 		v = y / y_norm;
 		lambda = sigma + 1 / y_norm;

@@ -23,21 +23,25 @@ function [lambda, v, it, erreval, errres] = invit(n, A, x0, sigma, eps, maxit, l
 
 	v = x0;
 	y = ones(size(x0));
+	x = x0;
 	shifted_A = A - sigma * eye(n);
 	[L, U, P] = lu(shifted_A);
 
-	% Source pseudocode: http://www.netlib.org/utk/people/JackDongarra/etemplates/node96.html.
 	for it = 1:1:maxit
-		y = U \ (L \ (P * v));
-		v = y / norm(y, Inf);
+		iter = it; 
+        x = y/norm(y,Inf);
+        y = A\x;    
+        th = transpose(x) *y; 
+        
+        v = y / th;
+        lambda = sigma + 1 / th;
 
-		lambda = sigma + 1 / norm(y, Inf);
 		erreval = [erreval, norm(l - lambda, 1) / norm(l, 1)];
 		errres = [errres, norm(A * v - lambda * v, 2)];
 
 		if (abs(l - lambda) <= eps)
 			break;
-		endif		
+		endif
 	end
 
 end
@@ -57,3 +61,23 @@ end
 %if (abs(l - lambda) <= eps)
 %	break;
 %endif
+
+
+	% v = x0;
+	% y = ones(size(x0));
+	% shifted_A = A - sigma * eye(n);
+	% [L, U, P] = lu(shifted_A);
+
+	% % Source pseudocode: http://www.netlib.org/utk/people/JackDongarra/etemplates/node96.html.
+	% for it = 1:1:maxit
+	% 	y = U \ (L \ (P * v));
+	% 	v = y / norm(y, Inf);
+
+	% 	lambda = sigma + 1 / norm(y, Inf);
+	% 	erreval = [erreval, norm(l - lambda, 1) / norm(l, 1)];
+	% 	errres = [errres, norm(A * v - lambda * v, 2)];
+
+	% 	if (abs(l - lambda) <= eps)
+	% 		break;
+	% 	endif		
+	% end
