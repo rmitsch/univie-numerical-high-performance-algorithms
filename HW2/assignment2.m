@@ -12,13 +12,13 @@
 %	o case of RQI advantage/disadvantage. note: unattractive when factorization is expensive. + reasoning.
 
 % Set various constants.
-problem_sizes = 100:100:300;
+problem_sizes = 3:3:3;
 k = 3;
 peak_performance = 3.29 * 10^9; % https://asteroidsathome.net/boinc/cpu_list.php
-maxit = uint32(100);
+maxit = uint32(1000);
 eps = 10^-6;
 eig_methods = {'invit', 'rqi', 'rqi_k'};
-sigma = 0;
+sigma = 3;
 
 % Set function handles.
 funcs.invit = @invit;
@@ -44,12 +44,22 @@ for i = 1:size(problem_sizes)(2)
     % Initialize start vector x0.
 	x0 = rand(problem_sizes(i), 1);
 	% Get true dominant eigenvalue.
-	l = max(eig(A))
+	l = max(eig(A));
 	
+	
+	A = [3.90439, 0.70473, 0.63478; 0.70473, 3.08147, 0.12270; 0.63478, 0.12270, 3.80788];
+	x0 = [0.48914; 0.75587; 0.67534];
+	n = uint32(3);
+	l = max(eig(A))
+	eig(A)
+	
+
 	for method = eig_methods
 		method = method{1};
 		printf('  %s\n', method)
 		tic_id = tic;
+
+		
 		
 		% Suppress warnings about nearly singular matrix.
 		warning('off', 'Octave:nearly-singular-matrix');
@@ -64,10 +74,11 @@ for i = 1:size(problem_sizes)(2)
 		] = funcs.(method)(n, A, x0, sigma, eps, maxit, l, k);
 		
 		lambda
-
+		l
 		runtimes.(method)(i) = toc(tic_id);
 		complexity = 2 * (problem_sizes(i)^3) / 3;
 		efficiencies.(method)(i) = complexity / runtimes.(method)(i) / peak_performance;
+		exit
 	end
 	printf('\n-----------------\n')
 end
