@@ -20,26 +20,29 @@ function [lambda, v, it, erreval, errres] = invit(n, A, x0, sigma, eps, maxit, l
 	erreval = [];
 	errres = [];
 
+    lambda = 0;
 	v = x0;
     y = x0;
     shifted_A = A - sigma .* eye(n);
-    %[L, U, P] = lu(shifted_A);
+    [L, U, P] = lu(shifted_A);
  
     for it = 1:1:maxit
-     	%y = U \ (L \ (P * v))
-         y = (shifted_A) \ v;
-         y_norm = norm(y, Inf); 
-         v = y / y_norm;
- 
-	 	 lambda = sigma + 1 / y_norm;
-	 	 erreval = [erreval, norm(l - lambda, 1) / norm(l, 1)];
-	 	 errres = [errres, norm(A * v - lambda * v, 2)];
+     	y = U \ (L \ (P * v));
+        %y = (shifted_A) \ v;
+        y_norm = norm(y, Inf); 
+        v = y / y_norm;
+        
+        lambda = sigma + 1 / y_norm;
+	 	errres_it = norm(A * v - lambda * v, 2);
+        erreval = [erreval, norm(l - lambda, 1) / norm(l, 1)];
+	 	errres = [errres, errres_it];
 
-         if (abs(l - lambda) <= eps)
-             break;
-         endif
+        if (errres_it <= eps)
+            break;
+        endif
     end
-    it
+
+    lambda = sigma + 1 / y_norm;
 end
 
 

@@ -1,24 +1,19 @@
 % todos
-% BUGS
-% 	o finish invit.m with all results.
 % EVALUTION
-% 	o calculate efficiencies.
-%		-> what's the runtime complexity? check pdf
-% 	o choose starting vectors (what are canonical starting vectors?).
+% 	o choose sigma for comparison of invit/rqi/rqi_k in assignment_2.m.
 % 	o documentation
 % EXPERIMENTS
-% 	o shift for invit.
 % 	o k for rqi_k.
 %	o case of RQI advantage/disadvantage. note: unattractive when factorization is expensive. + reasoning.
 
 % Set various constants.
 problem_sizes = 3:3:3;
 k = 3;
-peak_performance = 3.29 * 10^9; % https://asteroidsathome.net/boinc/cpu_list.php
+peak_performance = 3.5 * 10^9; % https://lhcathome.cern.ch/lhcathome/cpu_list.php; theoretical peak performance not found.
 maxit = uint32(1000);
 eps = 10^-6;
 eig_methods = {'invit', 'rqi', 'rqi_k'};
-sigma = 3;
+sigma = -4;
 
 % Set function handles.
 funcs.invit = @invit;
@@ -59,8 +54,6 @@ for i = 1:size(problem_sizes)(2)
 		printf('  %s\n', method)
 		tic_id = tic;
 
-		
-		
 		% Suppress warnings about nearly singular matrix.
 		warning('off', 'Octave:nearly-singular-matrix');
 
@@ -74,13 +67,13 @@ for i = 1:size(problem_sizes)(2)
 		] = funcs.(method)(n, A, x0, sigma, eps, maxit, l, k);
 		
 		lambda
-		l
+		eig(A)
 		runtimes.(method)(i) = toc(tic_id);
-		complexity = 2 * (problem_sizes(i)^3) / 3;
-		efficiencies.(method)(i) = complexity / runtimes.(method)(i) / peak_performance;
+		
+		num_ops = calc_num_ops(method, n, its.(method)(i), k);
+		efficiencies.(method)(i) = num_ops / runtimes.(method)(i) / peak_performance;
 		exit
 	end
-	printf('\n-----------------\n')
 end
 
 %%%%%%%%%%%%%%%%%%%%

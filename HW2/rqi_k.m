@@ -37,11 +37,12 @@ function [lambda, v, it, erreval, errres] = rqi_k(n, A, x0, sigma, eps, maxit, l
 		y_norm = norm(y, Inf); 
 		v = y / y_norm;
 		lambda = sigma + 1 / y_norm;
-
+		
+		errres_it = norm(A * v - lambda * v, 2);
 		erreval = [erreval, norm(l - lambda, 1) / norm(l, 1)];
-		errres = [errres, norm(A * v - lambda * v, 2)];
+		errres = [errres, errres_it];
 
-		if (abs(l - lambda) <= eps)
+		if (errres_it <= eps)
 			break;
 		endif
 	end
