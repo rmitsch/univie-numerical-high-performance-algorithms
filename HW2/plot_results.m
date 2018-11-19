@@ -93,34 +93,35 @@ function plot_results(n, runtimes, its, efficiencies, errevals, errress)
 	% ----------------------------
 
 	idx = 1;
-	for i = n
-		i = num2str(n(idx));
-		
-		figure('Position',[0, 0, 800, 250])
-		grid on
-		hold on
+%	for i = n
+	idx = size(n)(2);
+	i = num2str(n(idx));
+	
+	figure('Position',[0, 0, 800, 250])
+	grid on
+	hold on
 
-		semilogy(1:1:its.invit(idx), errevals.invit.(i), 'marker', 'x',  'markersize', 8, '1; Inverse Iteration;-');	
-		semilogy(1:1:its.rqi(idx), errevals.rqi.(i), 'marker', '+',  'markersize', 8, '2; Rayleigh Quotient Iteration;-');
-		semilogy(1:1:its.rqi_k(idx), errevals.rqi_k.(i), 'marker', 's',  'markersize', 8, '3; Rayleigh Quotient Iteration (k);-');
+	semilogy(1:1:its.invit(idx), errevals.invit.(i), 'marker', 'x',  'markersize', 8, '1; Inverse Iteration;-');	
+	semilogy(1:1:its.rqi(idx), errevals.rqi.(i), 'marker', '+',  'markersize', 8, '2; Rayleigh Quotient Iteration;-');
+	semilogy(1:1:its.rqi_k(idx), errevals.rqi_k.(i), 'marker', 's',  'markersize', 8, '3; Rayleigh Quotient Iteration (k);-');
 
-		semilogy(1:1:its.invit(idx), errress.invit.(i), 'marker', 'x',  'markersize', 8, '1; Inverse Iteration;--');	
-		semilogy(1:1:its.rqi(idx), errress.rqi.(i), 'marker', '+',  'markersize', 8, '2; Rayleigh Quotient Iteration;--');
-		semilogy(1:1:its.rqi_k(idx), errress.rqi_k.(i), 'marker', 's',  'markersize', 8, '3; Rayleigh Quotient Iteration (k);--');
+	semilogy(1:1:its.invit(idx), errress.invit.(i), 'marker', 'x',  'markersize', 8, '1; Inverse Iteration;--');	
+	semilogy(1:1:its.rqi(idx), errress.rqi.(i), 'marker', '+',  'markersize', 8, '2; Rayleigh Quotient Iteration;--');
+	semilogy(1:1:its.rqi_k(idx), errress.rqi_k.(i), 'marker', 's',  'markersize', 8, '3; Rayleigh Quotient Iteration (k);--');
 
-		leg = legend ({
-		        'Relative eigenvalue error for invit()', 
-		        'Relative eigenvalue error for rqi()', 
-		        'Relative eigenvalue error for rqi\_k()',
-		        'Residual vector norm for invit()', 
-		        'Residual vector norm for rqi()', 
-		        'Residual vector norm for rqi\_k()'
-		    }, 'location', 'eastoutside');
-		set (leg, 'fontsize', 16);
-		title (strcat('Convergence history via accuracy metrics over iterations with n = ', i), 'fontsize', 16);
-		ylabel('Accuracy metric value');
-		xlabel('Iteration number');
+	leg = legend ({
+	        'Relative eigenvalue error for invit()', 
+	        'Relative eigenvalue error for rqi()', 
+	        'Relative eigenvalue error for rqi\_k()',
+	        'Residual vector norm for invit()', 
+	        'Residual vector norm for rqi()', 
+	        'Residual vector norm for rqi\_k()'
+	    }, 'location', 'eastoutside');
+	set (leg, 'fontsize', 16);
+	title (strcat('Convergence history via accuracy metrics over iterations with n = ', i), 'fontsize', 16);
+	ylabel('Accuracy metric value');
+	xlabel('Iteration number');
 
 		idx += 1;
-	end
+%	end
 end

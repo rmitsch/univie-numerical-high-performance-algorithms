@@ -52,19 +52,18 @@ for i = 1:size(problem_sizes)(2)
     xlabel('abs(sigma - max(eig(A))');
     title (strcat('Runtimes w.r.t. different shift values for n = ', num2str(n)), 'fontsize', 16);
 end
-exit
 
 %-------------------------------------------------
-% Experiment with starting vectors..
+% Experiment with starting vectors.
 %-------------------------------------------------
 
 
 % Set various constants.
-problem_sizes = 100:100:500;
+problem_sizes = 2000:2000:2000;
 peak_performance = 3.5 * 10^9;
 maxit = uint32(100);
 eps = 10^-6;
-num_start_vectors = 4 + 1;
+num_start_vectors = 10 + 1;
 
 runtimes = zeros(num_start_vectors, size(problem_sizes)(2));
 its = zeros(num_start_vectors, size(problem_sizes)(2));
@@ -74,9 +73,7 @@ for i = 1:size(problem_sizes)(2)
 
 	% Generate random non-singular matrix of rank n.
     A = generate_random_symmetric_matrix(n);
-    sigma = max(eig(A)) * 0.9;
-    % Initialize start vector x0.
-	x0 = rand(problem_sizes(i), 1);
+    sigma = max(eig(A)) * 0.8;
 	% Get true dominant eigenvalue.
 	l = max(eig(A));
 	
@@ -84,7 +81,7 @@ for i = 1:size(problem_sizes)(2)
 	start_vectors = [start_vectors, rand(n, 1)];
 	for j = 2:1:num_start_vectors
 		start_vector = zeros(n, 1);
-		start_vector(uint32(rand * n)) = 1;
+		start_vector(ceil(rand * n)) = 1;
 		start_vectors = [start_vectors, start_vector]; 
 	end
 
@@ -97,8 +94,7 @@ for i = 1:size(problem_sizes)(2)
 			its(j, i), ...
 			errevals.(j_str).(num2str(n)), ...
 			errress.(j_str).(num2str(n)) ...
-		] = invit(n, A, x0, sigma, eps, maxit, l);
-		l, lambda
+		] = invit(n, A, start_vectors(:, j), sigma, eps, maxit, l);
 		runtimes(j, i) = toc(tic_id);
 	end
 	
@@ -109,8 +105,8 @@ for i = 1:size(problem_sizes)(2)
     semilogy(1:1:num_start_vectors, runtimes(:, i), 'markersize', 3, '3; Runtime;o-');
     legend ({'Runtime in seconds    '}, 'location', 'eastoutside');
     ylabel('Runtime in seconds');
-    xlabel('Index of start vector (1 is random)');
-    title (strcat('Runtimes w.r.t. different start vectors for n = ', num2str(n)), 'fontsize', 16);
+    xlabel('Index of start vector (1 is random, others are canonical)');
+    title (strcat('Runtimes for INVIT w.r.t. different start vectors for n = ', num2str(n)), 'fontsize', 16);
 end
 
 %errevals

@@ -28,7 +28,6 @@ function [lambda, v, it, erreval, errres] = invit(n, A, x0, sigma, eps, maxit, l
  
     for it = 1:1:maxit
      	y = U \ (L \ (P * v));
-        %y = (shifted_A) \ v;
         y_norm = norm(y, Inf); 
         v = y / y_norm;
         
@@ -44,39 +43,3 @@ function [lambda, v, it, erreval, errres] = invit(n, A, x0, sigma, eps, maxit, l
 
     lambda = sigma + 1 / y_norm;
 end
-
-
-%%%%%%%%%%%%%%%%%%%%%%%
-% Original pseudocode
-% from slides:
-%%%%%%%%%%%%%%%%%%%%%%%
-%y = (shifted_A) \ v;
-%v = y / norm(y, Inf);
-
-%lambda = sigma + 1 / norm(y, Inf);
-%erreval = [erreval, norm(l - lambda, 1) / norm(l, 1)];
-%errres = [errres, norm(A * v - lambda * v, 2)];
-
-%if (abs(l - lambda) <= eps)
-%	break;
-%endif
-
-
-	% v = x0;
-	% y = ones(size(x0));
-	% shifted_A = A - sigma * eye(n);
-	% [L, U, P] = lu(shifted_A);
-
-	% % Source pseudocode: http://www.netlib.org/utk/people/JackDongarra/etemplates/node96.html.
-	% for it = 1:1:maxit
-	% 	y = U \ (L \ (P * v));
-	% 	v = y / norm(y, Inf);
-
-	% 	lambda = sigma + 1 / norm(y, Inf);
-	% 	erreval = [erreval, norm(l - lambda, 1) / norm(l, 1)];
-	% 	errres = [errres, norm(A * v - lambda * v, 2)];
-
-	% 	if (abs(l - lambda) <= eps)
-	% 		break;
-	% 	endif		
-	% end
