@@ -107,5 +107,5 @@ venv.bak/
 
 /resources
 octave-workspace
-QRD/./idea
-QRD/./idea/*
+QRD/.idea
+QRD/.idea/*
