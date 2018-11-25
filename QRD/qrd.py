@@ -8,12 +8,11 @@ import numpy as np
 from typing import Union
 
 
-def householder(alpha, x, logger: logging.Logger) -> Union[np.ndarray, int]:
+def householder(alpha: float, x: np.ndarray) -> Union[np.ndarray, int]:
     """
     Computes Householder vector for alpha and x.
     :param alpha:
     :param x:
-    :param logger:
     :return:
     """
 
@@ -32,7 +31,7 @@ def householder(alpha, x, logger: logging.Logger) -> Union[np.ndarray, int]:
     return v, tau
 
 
-def qr_decomposition(A: np.ndarray, m: int, n: int, logger: logging.Logger) -> np.ndarray:
+def qr_decomposition(A: np.ndarray, m: int, n: int, logger: logging.Logger) -> Union[np.ndarray, np.ndarray]:
     """
     Applies Householder-based QR decomposition on specified matrix A.
     :param A:
@@ -42,15 +41,36 @@ def qr_decomposition(A: np.ndarray, m: int, n: int, logger: logging.Logger) -> n
     :return:
     """
     logger.info("Starting QR decomposition.")
+    H = []
+    R = A
+    Q = A
+    I = np.eye(m, m)
 
     for j in range(0, n):
-        print(j)
+        # Apply Householder transformation.
+        x = A[j + 1:m, j]
+        v_householder, tau = householder(np.linalg.norm(x), x)
+        v = np.zeros((1, m))
+        v[0, j] = 1
+        v[0, j + 1:m] = v_householder
 
-    # todo
-    #   - go through individual vectors, apply householder transformation.
-    #   - piece together Q^T, R, Q. compare with correct result.
+        # Note that this sequence of steps is not the most efficient one - see slides or
+        # http://home.ku.edu.tr/~emengi/teaching/math504_f2011/Lecture12_new.pdf: Multiplying in the right sequence with
+        # A directly is more performant.
+        res = I - tau * v * np.transpose(v)
+        # if j > 0:
+            # for k in range(0, j):
+            #     res[k, k] = 1
 
-    return A
+        R = np.matmul(res, R)
+        H.append(res)
+
+    R = A
+    for h in H:
+        print(h)
+        R = np.matmul(h, R)
+
+    return Q, R
 
 
 if __name__ == '__main__':
@@ -69,5 +89,14 @@ if __name__ == '__main__':
     m = args["m"]
     n = args["n"]
 
-    A = qr_decomposition(np.random.rand(m, n), m, n, logger)
+    A = np.random.rand(m, n)
+    q, r = np.linalg.qr(A)
+    Q, R = qr_decomposition(A, m, n, logger)
+
+    print("*****")
+    print(Q)
+    print(q)
+    print("-----")
+    print(R)
+    print(r)
 
