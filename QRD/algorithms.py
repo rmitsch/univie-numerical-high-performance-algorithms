@@ -37,18 +37,16 @@ def householder(x: np.ndarray) -> Tuple[np.ndarray, int]:
     return v, tau
 
 
-@numba.jit(nopython=True)
-def qr_decomposition(A: np.ndarray, logger: logging.Logger) -> Tuple[np.ndarray, np.ndarray]:
+@numba.jit(nopython=False)
+def qr_decomposition(A: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     Decomposes rectangular matrix A in matrices Q and R.
     Note that
     https://stackoverflow.com/questions/53489237/qr-decomposition-with-householder-transformations-introduction-of-zeroes-uncle
     helped in getting the implementation right.
     :param A:
-    :param logger:
     :return:
     """
-    logger.info("Starting QR decomposition.")
 
     m, n = A.shape
     R = A.copy()
@@ -83,7 +81,7 @@ def compile_functions_with_numba():
     """
 
     A = np.random.rand(5, 5)
-    A_prime = np.linalg.qr(A)
+    A_prime = qr_decomposition(A)
     matmul(A, A_prime)
 
 
