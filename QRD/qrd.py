@@ -39,7 +39,6 @@ to ignore:
 
 ad evaluation: measure clock time after each substiantial improvement:
     - with/without numba
-    - blockify core alg
     - updating with single rs/cs
     - block updates
     
@@ -78,11 +77,11 @@ if __name__ == '__main__':
     # Compile functions with numba so that compilation time is not included in performance measurements.
     alg.compile_functions_with_numba()
 
-    results_df = tests.test_generation_from_scratch(sizes)
-    results_df.mn = np.log(results_df.mn)
-    results_df.plot(x="mn", y=["time_own", "time_lib"], logy=True)
+    # results_df = tests.test_generation_from_scratch(sizes)
+    # results_df.mn = np.log(results_df.mn)
+    # results_df.plot(x="mn", y=["time_own", "time_lib"], logy=True)
 
-    # results_df = tests.test_row_deletion((300, 200), [(299, 200)])
+    results_df = tests.test_row_deletion((300, 200), [(299, 200)])
 
     plt.grid(True)
     plt.show()
