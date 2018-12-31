@@ -54,7 +54,6 @@ Qs:
 
 """
 
-# todo inner loop has to add/remove new rows/columns; update values.
 # -> 5 test cases - hardcode for each case in separate function.
 # versions:
 #   - own
@@ -68,12 +67,22 @@ if __name__ == '__main__':
     sizes = [(i + 5, i) for i in range(10, 101, 10)]
     sizes.extend([(300, 300), (400, 400), (500, 500)])
 
+    # q: m, n
+    # r: n, n
+
+    # a = np.asarray([0, 1, 2, 3])
+    # print(a.shape)
+    # print(a[2:3]) -> 2
+    # print(a[2:4]) -> 2, 3
+
     # Compile functions with numba so that compilation time is not included in performance measurements.
     alg.compile_functions_with_numba()
 
     results_df = tests.test_generation_from_scratch(sizes)
     results_df.mn = np.log(results_df.mn)
     results_df.plot(x="mn", y=["time_own", "time_lib"], logy=True)
+
+    # results_df = tests.test_row_deletion((300, 200), [(299, 200)])
 
     plt.grid(True)
     plt.show()

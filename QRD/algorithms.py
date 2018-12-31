@@ -86,8 +86,7 @@ def qr_decomposition(A: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         R = H @ R
         Q = H @ Q
 
-    # triu is used here mainly for cosmetic reasons - we discard of the entries under the diagonale.
-    return Q[:n].T, np.triu(R[:n])
+    return Q.T, R  # Q[:n].T, np.triu(R[:n])
 
 
 @numba.jit(nopython=False)
@@ -127,8 +126,8 @@ def qr_insert_row():
     pass
 
 
-@numba.jit(nopython=False)
-def qr_delete_row(Q: np.ndarray, R: np.ndarray, b: np.ndarray, k: int) -> Tuple[np.ndarray, np.ndarray]:
+#@numba.jit(nopython=False)
+def qr_delete_row(Q: np.ndarray, R: np.ndarray, b: np.ndarray, k: int) -> Tuple[np.ndarray, np.ndarray, np.float]:
     """
     Updates Q and R after deleting one single row with index k.
     :param Q:
@@ -140,18 +139,57 @@ def qr_delete_row(Q: np.ndarray, R: np.ndarray, b: np.ndarray, k: int) -> Tuple[
 
     m, n = Q.shape
 
+    ###################################
+    # Algorithm 2.1 - compute R_tilde.
+    ###################################
+
     q_t = Q[k, 0:m + 1]
     q = q_t.T
+    print(Q.shape, m, q.shape, q_t.shape)
+    c_0, s_0 = givens(q[0], q[1])
 
-    if k != 1:
-        b[2:k + 1] = b[1:k]
+    if k != 0:
+        b[1:k + 1] = b[0:k]
 
-    d = np.dot(Q.T * b)
+    d = Q.T @ b
+    print(Q.shape, b.shape, d.shape)
 
-    for j in np.arange(start=m - 1, step=-1, stop=1):
+    for j in np.arange(start=m - 2, step=-1, stop=0):
         c, s = givens(q[j], q[j + 1])
-        # todo cont. here
-    return Q, R
+        cs_matrix = np.asarray([[c, s], [-s, c]])
+
+        q[j] = c * q[j] - s * q[j + 1]
+
+        if j <= n:
+            R[j:j + 2, j:n] = cs_matrix.T @  R[j: j + 2, j:n]
+
+        print(d.shape)
+        print(d[j:j + 2])
+        d[j: j + 2] = cs_matrix @ d[j:j + 2]
+
+    print("2")
+
+    R_tilde = R[1:m, 1:n]
+    d_tilde = d[1:m]
+    print(n, m)
+    print(d_tilde[n + 1:m])
+    resid = np.linalg.norm(d_tilde[n + 1:m], ord=2)
+
+    ###################################
+    # Algorithm 2.2 - compute Q_tilde.
+    ###################################
+
+    if k != 0:
+        Q[1: k + 1, 1:m + 1] = Q[0:k, 0:m + 1]
+
+    for j in np.arange(start=m - 2, step=-1, stop=9):
+        Q[1:m, j:j + 2] = Q[1:m, j:j + 2] @ cs_matrix
+
+    print("3")
+    Q[1:m, 1] = s_0 * Q[1:m, 0] + c_0 * Q[1:m, 1]
+    Q_tilde = Q[1:m, 1:m]
+    print("4")
+    return Q_tilde, R_tilde, resid
 
 
 def qr_insert_col():
