@@ -4,81 +4,80 @@ Implementation of Householder-reflection based QR decomposition of nxm matrices.
 
 import numpy as np
 import algorithms as alg
-import time
 import pandas as pd
 import utils
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-import scipy
-import scipy.linalg._decomp_update as scipy_qr_update
+import tests
 
 """
 todo 
-- Implementation of up-/downdating rows/columns
-- Evaluation framework
-- Blocking
-- Parallelization of Householder transformations
-- Numba
-- Comparison with performance measurements from paper(s)
-- Further literature research on optimizations
+    - Implementation of up-/downdating rows/columns
+    - Evaluation framework
+    - Blocking
+    - Comparison with performance measurements from paper(s)
+    - Store in input matrix 
+    - Investigate alternatives for sparse matrices/think about reasoning for ignoring them.
+    - Further literature research on optimizations
+    
+###############################
+
+sequence by priority:
+    - delete one row
+    - add one row
+    - delete one col
+    - add one col
+    - blockify updates
+    - blockify core alg
+        
+###############################
+
+to ignore:
+    - complex values
+    
+###############################
+
+ad evaluation: measure clock time after each substiantial improvement:
+    - with/without numba
+    - blockify core alg
+    - updating with single rs/cs
+    - block updates
+    
+use reasonable, but smallish n, m for intermediate runs (up to 2500/2000 with inc > 100?).
+use larger m, n for final evaluation run.
+use Ax = b for evaluation.
+
+###############################
+
+Qs:
+    - what to do about sparse matrices? ignore completely?
+
 """
+
+# todo inner loop has to add/remove new rows/columns; update values.
+# -> 5 test cases - hardcode for each case in separate function.
+# versions:
+#   - own
+#   - scipy's QR
+#   - scipiy's https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.qr_update.html
+#     (or qr_insert(), qr_delete()).
 
 
 if __name__ == '__main__':
     logger = utils.create_logger("logger")
-    sizes = [(i, i) for i in range(10, 101, 10)]
-    sizes.extend([(300, 300), (400, 400)])
-
-    results = {
-        "m": [],
-        "n": [],
-        "mn": [],
-        "time_own": [],
-        "time_lib": [],
-        "res_norm": []
-    }
+    sizes = [(i + 5, i) for i in range(10, 101, 10)]
+    sizes.extend([(300, 300), (400, 400), (500, 500)])
 
     # Compile functions with numba so that compilation time is not included in performance measurements.
     alg.compile_functions_with_numba()
 
-    pbar = tqdm(total=np.sum(m * n for m, n in sizes))
-    for size in sizes:
-        m, n = size
-        A = np.random.rand(m, n)
-
-        # todo inner loop has to add/remove new rows/columns; update values.
-        # -> 5 test cases - hardcode for each case in separate function.
-        # blocking is separate execution calling unblocked versions of functions. versions:
-        #   - own
-        #   - scipy's QR
-        #   - scipiy's https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.qr_update.html
-        #     (or qr_insert(), qr_delete()).
-
-        start = time.time()
-        scipy.linalg.qr(A)
-        duration_lib = time.time() - start
-
-        start = time.time()
-        Q, R = alg.qr_decomposition(A)
-        duration_own = time.time() - start
-
-        results["time_own"].append(duration_own)
-        results["time_lib"].append(duration_lib)
-        results["m"].append(m)
-        results["n"].append(n)
-        results["mn"].append(m * n)
-        results["res_norm"].append(alg.compute_residual(alg.matmul(Q, R), A))
-
-        pbar.update(m * n)
-    pbar.close()
-
-    results_df = pd.DataFrame(results)
+    results_df = tests.test_generation_from_scratch(sizes)
     results_df.mn = np.log(results_df.mn)
     results_df.plot(x="mn", y=["time_own", "time_lib"], logy=True)
 
     plt.grid(True)
     plt.show()
-    print(results_df)
+    print(results_df[["res_norm_QR", "res_norm_Axb"]])
 
 
 
