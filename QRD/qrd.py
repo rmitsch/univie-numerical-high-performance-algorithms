@@ -66,13 +66,15 @@ if __name__ == '__main__':
     sizes = [(i + 5, i) for i in range(10, 101, 10)]
     sizes.extend([(300, 300), (400, 400), (500, 500)])
 
-    # q: m, n
-    # r: n, n
+    # q: m, m
+    # r: m, n
 
     # a = np.asarray([0, 1, 2, 3])
     # print(a.shape)
+    # print(a[:3])
     # print(a[2:3]) -> 2
     # print(a[2:4]) -> 2, 3
+    # exit()
 
     # Compile functions with numba so that compilation time is not included in performance measurements.
     alg.compile_functions_with_numba()
@@ -81,7 +83,9 @@ if __name__ == '__main__':
     # results_df.mn = np.log(results_df.mn)
     # results_df.plot(x="mn", y=["time_own", "time_lib"], logy=True)
 
-    results_df = tests.test_row_deletion((300, 200), [(299, 200)])
+    # results_df = tests.test_del_row((300, 200), [(299, 200)])
+    # results_df = tests.test_add_row((300, 200), [(301, 200)])
+    results_df = tests.test_del_col((300, 200), [(300, 199)])
 
     plt.grid(True)
     plt.show()

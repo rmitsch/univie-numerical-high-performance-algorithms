@@ -127,7 +127,12 @@ def qr_insert_row():
 
 
 #@numba.jit(nopython=False)
-def qr_delete_row(Q: np.ndarray, R: np.ndarray, b: np.ndarray, k: int) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.float]:
+def qr_delete_row(
+        Q: np.ndarray,
+        R: np.ndarray,
+        b: np.ndarray,
+        k: int
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.float]:
     """
     Updates Q and R after deleting one single row with index k.
     :param Q:
@@ -138,6 +143,7 @@ def qr_delete_row(Q: np.ndarray, R: np.ndarray, b: np.ndarray, k: int) -> Tuple[
     """
 
     m, n = Q.shape[0], R.shape[1]
+    cs_values = np.zeros((m, 2))
 
     ###################################
     # Algorithm 2.1 - compute R_tilde.
@@ -145,7 +151,6 @@ def qr_delete_row(Q: np.ndarray, R: np.ndarray, b: np.ndarray, k: int) -> Tuple[
 
     q_t = Q[k, :]
     q = q_t.T
-    cs_values = np.zeros((m, 2))
     cs_values[0] = givens(q[0], q[1])
 
     if k != 0:
@@ -167,7 +172,7 @@ def qr_delete_row(Q: np.ndarray, R: np.ndarray, b: np.ndarray, k: int) -> Tuple[
 
     R_tilde = R[1:, :]
     d_tilde = d[1:]
-    resid = np.linalg.norm(d_tilde[n + 1:m], ord=2)
+    resid = np.linalg.norm(d_tilde[n + 1:m + 1], ord=2)
 
     ###################################
     # Algorithm 2.2 - compute Q_tilde.
@@ -187,10 +192,134 @@ def qr_delete_row(Q: np.ndarray, R: np.ndarray, b: np.ndarray, k: int) -> Tuple[
     return Q[1:, 1:], R_tilde, b[1:], resid
 
 
+#@numba.jit(nopython=False)
+def qr_add_row(
+        Q: np.ndarray,
+        R: np.ndarray,
+        u: np.ndarray,
+        mu: float,
+        b: np.ndarray,
+        k: int
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.float]:
+    """
+    Updates Q and R by adding one single row with index k.
+    :param Q:
+    :param R:
+    :param u: Vector to insert in A.
+    :param mu: Value to insert in b.
+    :param b: b in Ax = b.
+    :param k:
+    :return:
+    """
+
+    m, n = Q.shape[0], R.shape[1]
+    cs_values = np.zeros((m, 2))
+
+    ###################################
+    # Algorithm 2.6 - compute R_tilde.
+    ###################################
+
+    d = Q.T @ b
+    for j in np.arange(0, n):
+        c, s = givens(R[j, j], u[j])
+        cs_values[j] = [c, s]
+        R[j, j] = c * R[j, j] - s * u[j]
+
+        t1 = R[j, j + 1:]
+        t2 = u[j + 1:]
+        R[j, j + 1:] = c * t1 - s * t2
+        u[j + 1:] = s * t1 + c * t2
+
+        t1 = d[j]
+        t2 = mu
+        d[j] = c * t1 - s * t2
+        mu = s * t1 + c * t2
+
+    R_tilde = np.append(R, np.zeros((1, n)), axis=0)
+    print(R.shape, np.zeros((1, n)).shape, R_tilde.shape)
+    d_tilde = np.append(d, mu)
+    resid = np.linalg.norm(d_tilde[n + 1:m + 1], ord=2)
+
+    ###################################
+    # Algorithm 2.7 - compute Q_tilde.
+    ###################################
+
+    Q_tilde = np.zeros((m + 1, m + 1))
+    Q_tilde[:m, :m] = Q
+    Q_tilde[m, n] = 1
+
+    if k != m + 1:
+        Q_proxy = np.zeros((m + 1, m))
+        Q_proxy[:k - 1] = Q[:k - 1]
+        Q_proxy[k] = Q[m - 1]  # todo actually Q[m], but Q has only m rows - how is this supposed to work?
+        Q_proxy[k + 1:] = Q[k:]
+        Q = Q_proxy
+
+    for j in np.arange(start=0, stop=n, step=1):
+        c, s = cs_values[j]
+        t1 = Q_tilde[:, j - 1]
+        t2 = Q_tilde[:, m]
+        Q_tilde[:, j - 1] = c * t1 - s * t2
+        Q_tilde[:, m] = c * t1 - s * t2
+
+    b_tilde = np.zeros((m + 1, 1))
+    b_tilde[:k] = b[:k]
+    b_tilde[k] = mu
+    b_tilde[k + 1:] = b[k:]
+
+    return Q_tilde, R_tilde, b_tilde, resid
+
+
 def qr_insert_col():
     pass
 
 
-def qr_delete_col():
-    pass
+#@numba.jit(nopython=False)
+def qr_delete_col(
+        Q: np.ndarray,
+        R: np.ndarray,
+        b: np.ndarray,
+        k: int
+) -> Tuple[np.ndarray, np.ndarray, np.float]:
+    """
+    Updates Q and R by adding one single column with index k.
+    :param Q:
+    :param R:
+    :param b:
+    :param k:
+    :return:
+    """
 
+    m, n = Q.shape[0], R.shape[1]
+    c = np.zeros((m,))
+    s = np.zeros((m,))
+
+    ###################################
+    # Algorithm 2.13 - compute R_tilde.
+    ###################################
+
+    d_tilde = Q.T @ b
+    R[:, k:n - 1] = R[:, k + 1:]
+
+    for j in np.arange(start=k, stop=n, step=1):
+        c[j], s[j] = givens(R[j, j], R[j + 1, j])
+        cs_matrix = np.asarray([[c[j], s[j]], [-s[j], c[j]]])
+
+        R[j, j] = c[j] * R[j, j] - s[j] * R[j + 1, j]
+        R[j:j + 2, j + 1:n - 1] = cs_matrix.T @ R[j:j + 2, j + 1:n - 1]
+
+        d_tilde[j:j + 2] = cs_matrix.T @ d_tilde[j:j + 2]
+
+    R_tilde = np.zeros((m, n - 1))
+    R_tilde = np.triu(R[:, :n - 1])
+    resid = np.linalg.norm(d_tilde[n + 1:m], ord=2)
+
+    ###################################
+    # Algorithm 2.14 - compute Q_tilde.
+    ###################################
+
+    for j in np.arange(start=k, stop=n, step=1):
+        cs_matrix = np.asarray([[c[j], s[j]], [-s[j], c[j]]])
+        Q[:, j:j + 2] = Q[:, j:j + 2] @  cs_matrix
+
+    return Q, R_tilde, resid
