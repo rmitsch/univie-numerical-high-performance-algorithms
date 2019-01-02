@@ -134,7 +134,7 @@ def test_del_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
 
         # With scipy's qr_remove().
         start = time.time()
-        Q_tilde_corr, R_tilde_corr = scipy_qr_update.qr_delete(Q, R, k=0, p=m - m_tilde, which="row")
+        Q_tilde_update, R_tilde_update = scipy_qr_update.qr_delete(Q, R, k=0, p=m - m_tilde, which="row")
         # print(np.allclose(np.dot(Q_tilde_corr, R_tilde_corr), np.dot(Q_tilde_update, R_tilde_update)))
         duration_scipy_update = time.time() - start
 
@@ -159,6 +159,7 @@ def test_del_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
         Q_tilde_eval = Q_tilde.T[:n].T
         R_tilde_eval = np.triu(R_tilde[:n])
 
+        # print(scipy.linalg.solve(R_tilde_eval, np.dot(Q_tilde_eval.T, b_tilde)))
         print(alg.compute_residual(
             scipy.linalg.solve(R_tilde_eval, np.dot(Q_tilde_eval.T, b_tilde)), x_tilde
         ))

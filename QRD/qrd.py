@@ -83,10 +83,10 @@ if __name__ == '__main__':
     # results_df.mn = np.log(results_df.mn)
     # results_df.plot(x="mn", y=["time_own", "time_lib"], logy=True)
 
-    # results_df = tests.test_del_row((300, 200), [(299, 200)])
+    results_df = tests.test_del_row((300, 200), [(299, 200)])
     # results_df = tests.test_add_row((300, 200), [(301, 200)])
     # results_df = tests.test_del_col((300, 200), [(300, 199)])
-    results_df = tests.test_add_col((300, 200), [(300, 201)])
+    # results_df = tests.test_add_col((300, 200), [(300, 201)])
 
     plt.grid(True)
     plt.show()

@@ -143,7 +143,8 @@ def qr_delete_row(
     """
 
     m, n = Q.shape[0], R.shape[1]
-    cs_values = np.zeros((m, 2))
+    c = np.zeros((m,))
+    s = np.zeros((m,))
 
     ###################################
     # Algorithm 2.1 - compute R_tilde.
@@ -151,43 +152,39 @@ def qr_delete_row(
 
     q_t = Q[k, :]
     q = q_t.T
-    cs_values[0] = givens(q[0], q[1])
 
     if k != 0:
-        b[1:k + 1] = b[0:k]
+        b[1:k + 1] = b[:k]
 
     d = Q.T @ b
 
     for j in np.arange(start=m - 2, step=-1, stop=-1):
-        c, s = givens(q[j], q[j + 1])
-        cs_values[j] = [c, s]
-        cs_matrix = np.asarray([[c, s], [-s, c]])
+        c[j], s[j] = givens(q[j], q[j + 1])
+        cs_matrix = np.asarray([[c[j], s[j]], [-s[j], c[j]]])
+        q[j] = c[j] * q[j] - s[j] * q[j + 1]
 
-        q[j] = c * q[j] - s * q[j + 1]
-
-        if j <= n:
+        if j <= n - 1:
             R[j:j + 2, j:] = cs_matrix.T @ R[j:j + 2, j:]
 
         d[j:j + 2] = cs_matrix.T @ d[j:j + 2]
 
     R_tilde = R[1:, :]
     d_tilde = d[1:]
-    resid = np.linalg.norm(d_tilde[n + 1:m + 1], ord=2)
+    resid = np.linalg.norm(d_tilde[n + 1:m], ord=2)
 
     ###################################
     # Algorithm 2.2 - compute Q_tilde.
     ###################################
 
     if k != 0:
-        Q[1:k + 1, 1:] = Q[0:k, 0:]
+        Q[1:k + 1, :] = Q[:k, :]
 
     for j in np.arange(start=m - 2, step=-1, stop=-1):
-        c, s = cs_values[j]
-        cs_matrix = np.asarray([[c, s], [-s, c]])
-
+        cs_matrix = np.asarray([[c[j], s[j]], [-s[j], c[j]]])
         Q[1:, j:j + 2] = Q[1:m, j:j + 2] @ cs_matrix
 
-    Q[1:, 1] = cs_values[0, 1] * Q[1:, 0] + cs_values[0, 1] * Q[1:, 1]
+    Q[1:, 1] = s[0] * Q[1:, 0] + c[0] * Q[1:, 1]
+
 
     return Q[1:, 1:], R_tilde, b[1:], resid
 
