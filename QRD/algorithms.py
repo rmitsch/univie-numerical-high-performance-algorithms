@@ -323,3 +323,68 @@ def qr_delete_col(
         Q[:, j:j + 2] = Q[:, j:j + 2] @  cs_matrix
 
     return Q, R_tilde, resid
+
+
+#@numba.jit(nopython=False)
+def qr_add_col(
+        Q: np.ndarray,
+        R: np.ndarray,
+        u: np.ndarray,
+        b: np.ndarray,
+        k: int
+) -> Tuple[np.ndarray, np.ndarray, np.float]:
+    """
+    Updates Q and R by adding one single column with index k.
+    :param Q:
+    :param R:
+    :param u: Vector to insert in A.
+    :param b: b in Ax = b.
+    :param k:
+    :return:
+    """
+
+    m, n = Q.shape[0], R.shape[1]
+    c = np.zeros((m,))
+    s = np.zeros((m,))
+
+    ###################################
+    # Algorithm 2.19 - compute R_tilde.
+    ###################################
+
+    u = Q.T @ u
+    d_tilde = Q.T @ b
+
+    for i in np.arange(start=m - 1, stop=k, step=-1):
+        c[i], s[i] = givens(u[i - 1], u[i])
+        cs_matrix = np.asarray([[c[i], s[i]], [-s[i], c[i]]])
+        u[i - 1] = c[i] * u[i - 1] - s[i] * u[i]  # R_tilde[i} - wtf?
+
+        if i <= n:
+            R[i - 1:i + 1, i - 1:] = cs_matrix.T @ R[i - 1:i + 1, i - 1:]
+
+    R_tilde = np.zeros((m, n + 1))
+    R_tilde[:, k] = u
+
+    if k == 0:
+        R_tilde[:, k + 1:] = R
+
+    elif k == n:
+        R_tilde[:, :k] = R
+
+    else:
+        R_tilde[:, :k] = R[:, :k]
+        R_tilde[:, k + 1:] = R[:, k:]
+
+    R_tilde = np.triu(R_tilde)
+    resid = np.linalg.norm(d_tilde[n + 1:m], ord=2)
+
+    ###################################
+    # Algorithm 2.20 - compute Q_tilde.
+    ###################################
+
+    for i in np.arange(start=m-1, stop=k, step=-1):
+        c[i], s[i] = givens(u[i - 1], u[i])
+        cs_matrix = np.asarray([[c[i], s[i]], [-s[i], c[i]]])
+        Q[:, i - 1:i + 1] = Q[:, i - 1:i + 1] @ cs_matrix
+
+    return Q, R_tilde, resid
