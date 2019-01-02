@@ -1,6 +1,5 @@
 import numpy as np
 from typing import Tuple
-import logging
 import numba
 import math
 
@@ -122,10 +121,6 @@ def matmul(A: np.ndarray, B: np.ndarray) -> np.ndarray:
     return A @ B
 
 
-def qr_insert_row():
-    pass
-
-
 #@numba.jit(nopython=False)
 def qr_delete_row(
         Q: np.ndarray,
@@ -184,7 +179,6 @@ def qr_delete_row(
         Q[1:, j:j + 2] = Q[1:m, j:j + 2] @ cs_matrix
 
     Q[1:, 1] = s[0] * Q[1:, 0] + c[0] * Q[1:, 1]
-
 
     return Q[1:, 1:], R_tilde, b[1:], resid
 

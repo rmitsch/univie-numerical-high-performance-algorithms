@@ -1,5 +1,6 @@
 import numpy as np
 import algorithms as alg
+import algorithms_blocked as balg
 import time
 from tqdm import tqdm
 import scipy
@@ -146,6 +147,15 @@ def test_del_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
         Q_tilde, R_tilde, b_tilde, residual = alg.qr_delete_row(Q_input, R_input, b, k=0)
         duration_own = time.time() - start
 
+        # With own blocked implementation.
+        start = time.time()
+        Q_input, R_input = np.copy(Q), np.copy(R)
+        b_tilde = np.copy(b)
+        # for i in range(0, m - m_tilde):
+        Q_tilde, R_tilde, b_tilde, residual = balg.qr_delete_row(Q_input, R_input, b, p=1, k=0)
+        duration_own = time.time() - start
+
+        print(b_tilde.shape, b_tilde_corr.shape)
         print(Q_tilde.shape, Q_tilde_corr.shape)
         print(R_tilde.shape, R_tilde_corr.shape)
         print(np.allclose(np.dot(Q_tilde_corr, R_tilde_corr), np.dot(Q_tilde, R_tilde)))
@@ -156,13 +166,18 @@ def test_del_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
         # Gather evaluation data.
         #################################################################
 
-        Q_tilde_eval = Q_tilde.T[:n].T
+        Q_tilde_eval = Q_tilde[:, :n]
         R_tilde_eval = np.triu(R_tilde[:n])
 
+        print(R_tilde_eval.shape, Q_tilde_eval.shape, np.dot(Q_tilde_eval.T, b_tilde).shape)
+
         # print(scipy.linalg.solve(R_tilde_eval, np.dot(Q_tilde_eval.T, b_tilde)))
-        print(alg.compute_residual(
-            scipy.linalg.solve(R_tilde_eval, np.dot(Q_tilde_eval.T, b_tilde)), x_tilde
-        ))
+        try:
+            print(alg.compute_residual(
+                scipy.linalg.solve(R_tilde_eval, np.dot(Q_tilde_eval.T, b_tilde)), x_tilde
+            ))
+        except np.linalg.LinAlgError as e:
+            print("Singular matrix.")
         exit()
 
         results["time_own"].append(duration_own)

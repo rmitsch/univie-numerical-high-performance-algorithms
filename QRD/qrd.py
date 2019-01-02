@@ -2,12 +2,9 @@
 Implementation of Householder-reflection based QR decomposition of nxm matrices.
 """
 
-import numpy as np
 import algorithms as alg
-import pandas as pd
 import utils
 import matplotlib.pyplot as plt
-from tqdm import tqdm
 import tests
 
 """
@@ -18,7 +15,7 @@ todo
     - Comparison with performance measurements from paper(s)
     - Store in input matrix 
     - Investigate alternatives for sparse matrices/think about reasoning for ignoring them.
-    - Further literature research on optimizations
+    - Further literature research on optimizations -> only in provided papers.
     
 ###############################
 
@@ -83,10 +80,10 @@ if __name__ == '__main__':
     # results_df.mn = np.log(results_df.mn)
     # results_df.plot(x="mn", y=["time_own", "time_lib"], logy=True)
 
-    results_df = tests.test_del_row((300, 200), [(299, 200)])
-    # results_df = tests.test_add_row((300, 200), [(301, 200)])
-    # results_df = tests.test_del_col((300, 200), [(300, 199)])
-    # results_df = tests.test_add_col((300, 200), [(300, 201)])
+    results_df = tests.test_del_row((10, 5), [(9, 5)])
+    # results_df = tests.test_add_row((10, 5), [(11, 5)])
+    # results_df = tests.test_del_col((10, 5), [(10, 4)])
+    # results_df = tests.test_add_col((10, 5), [(10, 6)])
 
     plt.grid(True)
     plt.show()
