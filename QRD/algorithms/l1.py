@@ -299,9 +299,8 @@ def qr_delete_col(
 
         d_tilde[j:j + 2] = cs_matrix.T @ d_tilde[j:j + 2]
 
-    R_tilde = np.zeros((m, n - 1))
     R_tilde = np.triu(R[:, :n - 1])
-    resid = np.linalg.norm(d_tilde[n + 1:m], ord=2)
+    resid = np.linalg.norm(d_tilde[n:m], ord=2)
 
     ###################################
     # Algorithm 2.14 - compute Q_tilde.

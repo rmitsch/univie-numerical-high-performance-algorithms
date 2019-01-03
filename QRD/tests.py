@@ -71,10 +71,9 @@ def test_generation_from_scratch(sizes: list) -> pd.DataFrame:
     return pd.DataFrame(results)
 
 
-def test_del_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
+def test_del_rows(size: tuple, modified_sizes: list) -> pd.DataFrame:
     """
     Tests deletion of rows.
-    Blocked removal currently not supported.
     :param size:
     :param modified_sizes:
     :return:
@@ -172,10 +171,9 @@ def test_del_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
     return pd.DataFrame(results)
 
 
-def test_add_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
+def test_add_rows(size: tuple, modified_sizes: list) -> pd.DataFrame:
     """
-    Tests deletion of rows.
-    Blocked removal currently not supported.
+    Tests addition of rows.
     :param size:
     :param modified_sizes:
     :return:
@@ -272,27 +270,15 @@ def test_add_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
     return pd.DataFrame(results)
 
 
-def test_del_col(size: tuple, modified_sizes: list) -> pd.DataFrame:
+def test_del_cols(size: tuple, modified_sizes: list) -> pd.DataFrame:
     """
-    Tests deletion of rows.
-    Blocked removal currently not supported.
+    Tests deletion of columns.
     :param size:
     :param modified_sizes:
     :return:
     """
 
-    results = {
-        "m": [],
-        "n": [],
-        "mn": [],
-        "time_own": [],
-        "time_own_blocked": [],
-        "time_scipy_update": [],
-        "time_numpy_scratch": [],
-        "res_norm_QR": [],
-        "res_norm_Axb": []
-    }
-
+    results = utils.init_result_dict()
     m, n = size
     A = np.random.rand(m, n)
     x = np.ones((n, 1))
@@ -312,6 +298,7 @@ def test_del_col(size: tuple, modified_sizes: list) -> pd.DataFrame:
         A_tilde = A[:, n - n_tilde:]
         x_tilde = np.ones((n_tilde, 1))
         b_tilde_corr = np.dot(A_tilde, x_tilde)
+        p = n - n_tilde
 
         #################################################################
         # Remove rows.
@@ -320,28 +307,27 @@ def test_del_col(size: tuple, modified_sizes: list) -> pd.DataFrame:
         # With recalculating from scratch with numpy().
         start = time.time()
         Q_tilde_corr, R_tilde_corr = scipy.linalg.qr(A_tilde)
-        duration_numpy_scratch = time.time() - start
+        results["time_numpy_scratch"].append(time.time() - start)
 
         # With scipy's qr_remove().
         start = time.time()
-        Q_tilde_corr, R_tilde_corr = scipy_qr_update.qr_delete(Q, R, k=0, p=n - n_tilde, which="col")
-        # print(np.allclose(np.dot(Q_tilde_corr, R_tilde_corr), np.dot(Q_tilde_update, R_tilde_update)))
-        duration_scipy_update = time.time() - start
+        scipy_qr_update.qr_delete(Q, R, k=0, p=p, which="col")
+        results["time_scipy_update"].append(time.time() - start)
 
         # With own L1 implementation..
         start = time.time()
-        Q_input, R_input = np.copy(Q), np.copy(R)
-        # for i in range(0, m - m_tilde):
-        Q_tilde, R_tilde, residual = alg1.qr_delete_col(Q_input, R_input, b, k=0)
-        duration_own = time.time() - start
+        Q_tilde, R_tilde, b_tilde = np.copy(Q), np.copy(R), np.copy(b)
+        for i in range(0, n - n_tilde):
+            Q_tilde, R_tilde, residual = alg1.qr_delete_col(Q_tilde, R_tilde, b_tilde, k=0)
+        results["time_own"].append(time.time() - start)
 
         # With own L2 implementation.
         start = time.time()
-        Q_input, R_input = np.copy(Q), np.copy(R)
+        print(n, n_tilde)
         Q_tilde, R_tilde, residual = alg2.qr_delete_cols(
-            Q_input, R_input, b, p=n - n_tilde, k=0
+            np.copy(Q), np.copy(R), b, p=p, k=0
         )
-        duration_own = time.time() - start
+        results["time_own_blocked"].append(time.time() - start)
 
         print(Q_tilde.shape, Q_tilde_corr.shape)
         print(R_tilde.shape, R_tilde_corr.shape)
@@ -352,18 +338,14 @@ def test_del_col(size: tuple, modified_sizes: list) -> pd.DataFrame:
         # Gather evaluation data.
         #################################################################
 
-        Q_tilde_eval = Q_tilde.T[:n - 1].T
-        R_tilde_eval = np.triu(R_tilde[:n - 1])
+        Q_tilde_eval = Q_tilde.T[:n_tilde].T
+        R_tilde_eval = np.triu(R_tilde[:n_tilde])
 
         print(alg1.compute_residual(
             scipy.linalg.solve(R_tilde_eval, np.dot(Q_tilde_eval.T, b_tilde_corr)), x_tilde
         ))
         exit()
 
-        results["time_own"].append(duration_own)
-        results["time_blocked"].append(0)
-        results["time_numpy_scratch"].append(duration_numpy_scratch)
-        results["time_scipy_update"].append(duration_scipy_update)
         results["m"].append(m)
         results["n"].append(n)
         results["mn"].append(m * n)
@@ -380,10 +362,9 @@ def test_del_col(size: tuple, modified_sizes: list) -> pd.DataFrame:
     return pd.DataFrame(results)
 
 
-def test_add_col(size: tuple, modified_sizes: list) -> pd.DataFrame:
+def test_add_cols(size: tuple, modified_sizes: list) -> pd.DataFrame:
     """
-    Tests deletion of rows.
-    Blocked removal currently not supported.
+    Tests addition of columns.
     :param size:
     :param modified_sizes:
     :return:

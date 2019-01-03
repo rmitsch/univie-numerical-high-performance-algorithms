@@ -226,7 +226,7 @@ def qr_delete_cols(
             tau[j] * (V[:p, j].T @ R[j + 1:j + p + 1, j])
 
         v = np.ones((p + 1, 1))
-        v[1:] = V[:p, j]
+        v[1:, 0] = V[:p, j]
 
         if j < n - p - 1:
             R[j:j + p + 1, j + 1:n - p + 1] = R[j:j + p + 1, j + 1:n - p + 1] - \
@@ -245,7 +245,7 @@ def qr_delete_cols(
 
     for j in np.arange(start=k, stop=n - p, step=1):
         v = np.ones((p + 1, 1))
-        v[1:] = V[:p, j]
+        v[1:, 0] = V[:p, j]
 
         Q[:, j:j + p + 1] = Q[:, j:j + p + 1] - \
             tau[j] * (Q[:, j:j + p + 1] @ v) @ v.T
