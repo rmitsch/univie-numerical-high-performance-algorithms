@@ -98,22 +98,13 @@ def test_del_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
     b = np.dot(A, x)
     Q, R = scipy.linalg.qr(A)
 
-    # todo: compare single row updates with recalculation from scratch and scipy's row updates
-    # using
-    #   - (1) numpy.linalg,
-    #   - (2) scipy.linalg.qr_delete(),
-    #   - (3) own deletion alg.,
-    #   - (4) own blocked deletion algorithm.
-    # -> applicable to all row/col. add/del. test functions.
-    # note that 1, 2, 4 are executed only once. single row qr_deltetion has to be wrapped.
-    # with/without numba are two separate executions of test sequence.
-
     pbar = tqdm(total=(m * len(modified_sizes) - sum([m for m, n in modified_sizes])))
     pbar.close()
     for size_tilde in modified_sizes:
         m_tilde, _ = size_tilde
         assert m_tilde < m, "Make sure that m_tilde < m."
         A_tilde = A[m - m_tilde:m, :]
+        p = m - m_tilde
 
         ################################################################
         # Generate data and compute correct results for solving Ax = b
@@ -130,28 +121,26 @@ def test_del_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
         # With recalculating from scratch with numpy().
         start = time.time()
         Q_tilde_corr, R_tilde_corr = scipy.linalg.qr(A_tilde)
-        duration_numpy_scratch = time.time() - start
+        results["time_numpy_scratch"].append(time.time() - start)
 
         # With scipy's qr_remove().
         start = time.time()
-        Q_tilde_update, R_tilde_update = scipy_qr_update.qr_delete(Q, R, k=0, p=m - m_tilde, which="row")
-        # print(np.allclose(np.dot(Q_tilde_corr, R_tilde_corr), np.dot(Q_tilde_update, R_tilde_update)))
-        duration_scipy_update = time.time() - start
+        Q_tilde_update, R_tilde_update = scipy_qr_update.qr_delete(Q, R, k=0, p=p, which="row")
+        results["time_scipy_update"].append(time.time() - start)
 
         # With own L1 implementation..
         start = time.time()
-        Q_input, R_input = np.copy(Q), np.copy(R)
-        b_tilde = np.copy(b)
-        # for i in range(0, m - m_tilde):
-        Q_tilde, R_tilde, b_tilde, residual = alg1.qr_delete_row(Q_input, R_input, b, k=0)
-        duration_own = time.time() - start
+        Q_tilde, R_tilde, b_tilde = np.copy(Q), np.copy(R), np.copy(b)
+        for i in range(0, p):
+            Q_tilde, R_tilde, b_tilde, residual = alg1.qr_delete_row(Q_tilde, R_tilde, b_tilde, k=0)
+        results["time_own"].append(time.time() - start)
 
         # With own L2 implementation.
         start = time.time()
         Q_input, R_input = np.copy(Q), np.copy(R)
         b_tilde = np.copy(b)
-        Q_tilde, R_tilde, b_tilde, residual = alg2.qr_delete_rows(Q_input, R_input, b, p=1, k=0)
-        duration_own = time.time() - start
+        Q_tilde, R_tilde, b_tilde, residual = alg2.qr_delete_rows(Q_input, R_input, b, p=p, k=0)
+        results["time_blocked"].append(time.time() - start)
 
         print(b_tilde.shape, b_tilde_corr.shape)
         print(Q_tilde.shape, Q_tilde_corr.shape)
@@ -178,10 +167,6 @@ def test_del_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
             print("Singular matrix.")
         exit()
 
-        results["time_own"].append(duration_own)
-        results["time_blocked"].append(0)
-        results["time_numpy_scratch"].append(duration_numpy_scratch)
-        results["time_scipy_update"].append(duration_scipy_update)
         results["m"].append(m)
         results["n"].append(n)
         results["mn"].append(m * n)

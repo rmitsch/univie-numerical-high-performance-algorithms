@@ -80,7 +80,7 @@ if __name__ == '__main__':
     # results_df.mn = np.log(results_df.mn)
     # results_df.plot(x="mn", y=["time_own", "time_lib"], logy=True)
 
-    # results_df = tests.test_del_row((10, 5), [(9, 5)])
+    results_df = tests.test_del_row((10, 5), [(6, 5)])
     # results_df = tests.test_add_row((10, 5), [(12, 5)])
     # results_df = tests.test_del_col((10, 5), [(10, 4)])
     # results_df = tests.test_add_col((10, 5), [(10, 6)])

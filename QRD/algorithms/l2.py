@@ -59,7 +59,7 @@ def qr_delete_rows(
     W = Q[k:k + p, :]
 
     if k != 0:
-        b[p + 1:k + p] = b[:k]
+        b[p + 1:k + p] = b[:k - 1]
 
     d = Q.T @ b
 
@@ -96,7 +96,7 @@ def qr_delete_rows(
 
     Q[p:, i] = S[i, i] * Q[p:, i] + C[i, i] * Q[p:, i + 1]
 
-    return Q[p:, p:], R_tilde, b[1:], resid
+    return Q[p:, p:], R_tilde, b[p:], resid
 
 
 #@numba.jit(nopython=False)

@@ -165,7 +165,7 @@ def qr_delete_row(
 
     R_tilde = R[1:, :]
     d_tilde = d[1:]
-    resid = np.linalg.norm(d_tilde[n + 1:m], ord=2)
+    resid = np.linalg.norm(d_tilde[n:], ord=2)
 
     ###################################
     # Algorithm 2.2 - compute Q_tilde.
