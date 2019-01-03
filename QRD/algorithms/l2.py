@@ -169,9 +169,9 @@ def qr_add_rows(
     Q_tilde[m:, m:] = np.eye(p, p)
 
     if k != m:
-        Q_tilde[:k - 1] = Q_tilde[:k - 1, :]
-        Q_tilde[k - 1:k - 1 + p] = Q_tilde[m:m + p, :]
-        Q_tilde[k - 1 + p:] = Q_tilde[k:m, :]
+        insert_pos = k if k == 0 else k - 1
+        Q_tilde[insert_pos:insert_pos + p] = Q_tilde[m:m + p, :]
+        Q_tilde[insert_pos + p:] = Q_tilde[k:m, :]
 
     for j in np.arange(start=0, stop=n, step=1):
         Q_tilde_k = Q_tilde[:, j]

@@ -80,18 +80,7 @@ def test_del_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
     :return:
     """
 
-    results = {
-        "m": [],
-        "n": [],
-        "mn": [],
-        "time_own": [],
-        "time_own_blocked": [],
-        "time_scipy_update": [],
-        "time_numpy_scratch": [],
-        "res_norm_QR": [],
-        "res_norm_Axb": []
-    }
-
+    results = utils.init_result_dict()
     m, n = size
     A = np.random.rand(m, n)
     x = np.ones((n, 1))
@@ -140,7 +129,7 @@ def test_del_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
         Q_input, R_input = np.copy(Q), np.copy(R)
         b_tilde = np.copy(b)
         Q_tilde, R_tilde, b_tilde, residual = alg2.qr_delete_rows(Q_input, R_input, b, p=p, k=0)
-        results["time_blocked"].append(time.time() - start)
+        results["time_own_blocked"].append(time.time() - start)
 
         print(b_tilde.shape, b_tilde_corr.shape)
         print(Q_tilde.shape, Q_tilde_corr.shape)
@@ -167,9 +156,9 @@ def test_del_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
             print("Singular matrix.")
         exit()
 
-        results["m"].append(m)
+        results["m"].append(m_tilde)
         results["n"].append(n)
-        results["mn"].append(m * n)
+        results["mn"].append(m_tilde * n)
         results["res_norm_QR"].append(alg1.compute_residual(
             alg1.matmul(Q_tilde_eval, R_tilde_eval), A_tilde
         ))
@@ -192,18 +181,7 @@ def test_add_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
     :return:
     """
 
-    results = {
-        "m": [],
-        "n": [],
-        "mn": [],
-        "time_own": [],
-        "time_own_blocked": [],
-        "time_scipy_update": [],
-        "time_numpy_scratch": [],
-        "res_norm_QR": [],
-        "res_norm_Axb": []
-    }
-
+    results = utils.init_result_dict()
     m, n = size
     A = np.random.rand(m, n)
     x = np.ones((n, 1))
@@ -235,20 +213,22 @@ def test_add_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
         # With recalculating from scratch with numpy().
         start = time.time()
         Q_tilde_corr, R_tilde_corr = scipy.linalg.qr(A_tilde)
-        duration_numpy_scratch = time.time() - start
+        results["time_numpy_scratch"].append(time.time() - start)
 
         # With scipy's qr_remove().
         start = time.time()
         Q_tilde_corr, R_tilde_corr = scipy_qr_update.qr_insert(Q, R, k=m, u=U, which="row")
         # print(np.allclose(np.dot(Q_tilde_corr, R_tilde_corr), np.dot(Q_tilde_update, R_tilde_update)))
-        duration_scipy_update = time.time() - start
+        results["time_scipy_update"].append(time.time() - start)
 
         # With own L1 implementation..
         start = time.time()
-        Q_input, R_input = np.copy(Q), np.copy(R)
-        # for i in range(0, m - m_tilde):
-        Q_tilde, R_tilde, b_tilde, residual = alg1.qr_add_row(Q_input, R_input, u=U[0], b=b, mu=b_tilde_corr[m:][0], k=m)
-        duration_own = time.time() - start
+        Q_tilde, R_tilde = np.copy(Q), np.copy(R)
+        for i in range(m_tilde - m, 0):
+            Q_tilde, R_tilde, b_tilde, residual = alg1.qr_add_row(
+                Q_tilde, R_tilde, u=U[i], b=b, mu=b_tilde_corr[m:][i], k=0
+            )
+        results["time_own"].append(time.time() - start)
 
         # With own L2 implementation.
         start = time.time()
@@ -256,7 +236,7 @@ def test_add_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
         Q_tilde, R_tilde, b_tilde, residual = alg2.qr_add_rows(
             Q_input, R_input, p=m_tilde - m, U=U, b=b, e=b_tilde_corr[m:m_tilde], k=m
         )
-        duration_own = time.time() - start
+        results["time_own_blocked"].append(time.time() - start)
 
         print(Q_tilde.shape, Q_tilde_corr.shape)
         print(R_tilde.shape, R_tilde_corr.shape)
@@ -276,13 +256,9 @@ def test_add_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
         ))
         exit()
 
-        results["time_own"].append(duration_own)
-        results["time_blocked"].append(0)
-        results["time_numpy_scratch"].append(duration_numpy_scratch)
-        results["time_scipy_update"].append(duration_scipy_update)
-        results["m"].append(m)
+        results["m"].append(m_tilde)
         results["n"].append(n)
-        results["mn"].append(m * n)
+        results["mn"].append(m_tilde * n)
         results["res_norm_QR"].append(alg1.compute_residual(
             alg1.matmul(Q_tilde_eval, R_tilde_eval), A_tilde
         ))

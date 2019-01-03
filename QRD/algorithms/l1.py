@@ -238,12 +238,11 @@ def qr_add_row(
     Q_tilde[:m, :m] = Q
     Q_tilde[m, n] = 1
 
-    if k != m + 1:
-        Q_proxy = np.zeros((m + 1, m))
-        Q_proxy[:k - 1] = Q[:k - 1]
-        Q_proxy[k] = Q[m - 1]  # todo actually Q[m], but Q has only m rows - how is this supposed to work?
-        Q_proxy[k + 1:] = Q[k:]
-        Q = Q_proxy
+    if k != m:
+        # Note that paper refers to Q here, not Q~. Specified indexing is not possible with Q though.
+        Q_m = Q_tilde[m]
+        Q_tilde[k + 1:] = Q_tilde[k:m]
+        Q_tilde[k] = Q_m
 
     for j in np.arange(start=0, stop=n, step=1):
         c, s = cs_values[j]
