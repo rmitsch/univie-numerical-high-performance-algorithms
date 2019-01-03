@@ -7,6 +7,7 @@ import utils
 import matplotlib.pyplot as plt
 import tests
 import numpy as np
+import pandas as pd
 
 """
 todo 
@@ -61,12 +62,7 @@ Qs:
 
 if __name__ == '__main__':
     logger = utils.create_logger("logger")
-    sizes = [(i + 5, i) for i in range(10, 101, 10)]
-    sizes.extend([(300, 300), (400, 400), (500, 500)])
-
-    # q: m, m
-    # r: m, n
-
+    time_col_names = [method + "_time" for method in utils.METHODS]
     # a = np.asarray([0, 1, 2, 3])
     # print(a.shape)
     # print(a[:3])
@@ -77,18 +73,32 @@ if __name__ == '__main__':
     # Compile functions with numba so that compilation time is not included in performance measurements.
     alg.compile_functions_with_numba()
 
+    # sizes = [(i + 5, i) for i in range(10, 101, 10)]
+    # sizes.extend([(300, 300), (400, 400), (500, 500)])
     # results_df = tests.test_generation_from_scratch(sizes)
-    # results_df.mn = np.log(results_df.mn)
+    # results_df = results_df.drop(["l1", "l3"])
     # results_df.plot(x="mn", y=["time_own", "time_lib"], logy=True)
 
-    # results_df = tests.test_del_rows((10, 5), [(6, 5)])
-    # results_df = tests.test_add_rows((10, 5), [(12, 5)])
-    results_df = tests.test_del_cols((10, 5), [(10, 3)])
-    # results_df = tests.test_add_cols((10, 5), [(10, 6)])
+    # Always: Q.shape = (m, m); R.shape = (m, n).
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
+        results_df = tests.test_del_rows((10, 5), [9, 8, 7])
+        results_df.plot(x="m", y=time_col_names, logy=True, title="Deleting rows")
+        plt.grid(True)
+        print(results_df)
 
-    plt.grid(True)
+        results_df = tests.test_add_rows((10, 5), [11, 12, 13])
+        results_df.plot(x="m", y=time_col_names, logy=True, title="Inserting rows")
+        plt.grid(True)
+        print(results_df)
+
+        results_df = tests.test_del_cols((10, 5), [4, 3, 2])
+        results_df.plot(x="n", y=time_col_names, logy=True, title="Deleting columns")
+        plt.grid(True)
+        print(results_df)
+
+        results_df = tests.test_add_cols((10, 5), [6, 7, 8])
+        results_df.plot(x="n", y=time_col_names, logy=True, title="Inserting columns")
+        plt.grid(True)
+        print(results_df)
+
     plt.show()
-    print(results_df[["res_norm_QR", "res_norm_Axb"]])
-
-
-

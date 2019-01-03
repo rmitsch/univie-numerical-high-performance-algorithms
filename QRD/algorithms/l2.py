@@ -104,7 +104,6 @@ def qr_add_rows(
         Q: np.ndarray,
         R: np.ndarray,
         b: np.ndarray,
-        p: int,
         U: np.ndarray,
         e: np.ndarray,
         k: int
@@ -114,7 +113,6 @@ def qr_add_rows(
     :param Q:
     :param R:
     :param b: b in Ax = b.
-    :param p: Number of observations to remove starting from k.
     :param U: Rows to insert.
     :param e: Ux = e. To be inserted in b at index k. Equivalent to mu in single row addition.
     :param k:
@@ -124,6 +122,7 @@ def qr_add_rows(
     m, n = Q.shape[0], R.shape[1]
     V = np.zeros((m, m))
     tau = np.zeros((m,))
+    p = U.shape[0]
 
     ###################################
     # Algorithm 2.8 - compute R_tilde.
