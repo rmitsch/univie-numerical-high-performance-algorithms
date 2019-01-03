@@ -188,6 +188,17 @@ def test_add_rows(size: tuple, row_sizes: list) -> pd.DataFrame:
             x_tilde, b_tilde_corr, Q_tilde[:, :n], np.triu(R_tilde[:n])
         )
 
+        # With own L3 implementation.
+        Q_input, R_input = np.copy(Q), np.copy(R)
+        start = time.time()
+        Q_tilde, R_tilde, b_tilde, residual = alg3.qr_add_rows(
+            Q_input, R_input, U=U, b=b, e=b_tilde_corr[m:m_tilde], k=m
+        )
+        utils.update_measurements(
+            results, "l3", time.time() - start, A_tilde, Q_tilde_corr[:, :n], np.triu(R_tilde_corr[:n]),
+            x_tilde, b_tilde_corr, Q_tilde[:, :n], np.triu(R_tilde[:n])
+        )
+
         pbar.update(m_tilde * n)
     pbar.close()
 

@@ -81,24 +81,24 @@ if __name__ == '__main__':
 
     # Always: Q.shape = (m, m); R.shape = (m, n).
     with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
-        results_df = tests.test_del_rows((10, 5), [9, 8, 7])
-        results_df.plot(x="m", y=time_col_names, logy=True, title="Deleting rows")
-        plt.grid(True)
-        print(results_df)
+        # results_df = tests.test_del_rows((10, 5), [9, 8, 7])
+        # results_df.plot(x="m", y=time_col_names, logy=True, title="Deleting rows")
+        # plt.grid(True)
+        # print(results_df)
 
         results_df = tests.test_add_rows((10, 5), [11, 12, 13])
         results_df.plot(x="m", y=time_col_names, logy=True, title="Inserting rows")
         plt.grid(True)
         print(results_df)
 
-        results_df = tests.test_del_cols((10, 5), [4, 3, 2])
-        results_df.plot(x="n", y=time_col_names, logy=True, title="Deleting columns")
-        plt.grid(True)
-        print(results_df)
-
-        results_df = tests.test_add_cols((10, 5), [6, 7, 8])
-        results_df.plot(x="n", y=time_col_names, logy=True, title="Inserting columns")
-        plt.grid(True)
-        print(results_df)
+        # results_df = tests.test_del_cols((10, 5), [4, 3, 2])
+        # results_df.plot(x="n", y=time_col_names, logy=True, title="Deleting columns")
+        # plt.grid(True)
+        # print(results_df)
+        #
+        # results_df = tests.test_add_cols((10, 5), [6, 7, 8])
+        # results_df.plot(x="n", y=time_col_names, logy=True, title="Inserting columns")
+        # plt.grid(True)
+        # print(results_df)
 
     plt.show()
