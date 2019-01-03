@@ -1,6 +1,5 @@
 import numpy as np
-import algorithms as alg
-import algorithms_blocked as balg
+from algorithms import l1 as alg, l2 as balg
 import time
 from tqdm import tqdm
 import scipy
@@ -151,7 +150,6 @@ def test_del_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
         start = time.time()
         Q_input, R_input = np.copy(Q), np.copy(R)
         b_tilde = np.copy(b)
-        # for i in range(0, m - m_tilde):
         Q_tilde, R_tilde, b_tilde, residual = balg.qr_delete_row(Q_input, R_input, b, p=1, k=0)
         duration_own = time.time() - start
 
@@ -234,8 +232,8 @@ def test_add_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
         assert m_tilde > m, "Make sure that m_tilde < m."
         A_tilde = np.zeros((m_tilde, n))
         A_tilde[:m] = A
-        u = np.random.rand(m_tilde - m, n)
-        A_tilde[m:] = u
+        U = np.random.rand(m_tilde - m, n)
+        A_tilde[m:] = U
 
         ################################################################
         # Generate data and compute correct results for solving Ax = b
@@ -256,16 +254,23 @@ def test_add_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
 
         # With scipy's qr_remove().
         start = time.time()
-        Q_tilde_corr, R_tilde_corr = scipy_qr_update.qr_insert(Q, R, k=m, u=u, which="row")
+        Q_tilde_corr, R_tilde_corr = scipy_qr_update.qr_insert(Q, R, k=m, u=U, which="row")
         # print(np.allclose(np.dot(Q_tilde_corr, R_tilde_corr), np.dot(Q_tilde_update, R_tilde_update)))
         duration_scipy_update = time.time() - start
 
         # With own implementation.
         start = time.time()
         Q_input, R_input = np.copy(Q), np.copy(R)
-
         # for i in range(0, m - m_tilde):
-        Q_tilde, R_tilde, b_tilde, residual = alg.qr_add_row(Q_input, R_input, u=u[0], b=b, mu=b_tilde_corr[m:][0], k=m)
+        Q_tilde, R_tilde, b_tilde, residual = alg.qr_add_row(Q_input, R_input, u=U[0], b=b, mu=b_tilde_corr[m:][0], k=m)
+        duration_own = time.time() - start
+
+        # With own blocked implementation.
+        start = time.time()
+        Q_input, R_input = np.copy(Q), np.copy(R)
+        Q_tilde, R_tilde, b_tilde, residual = balg.qr_add_row(
+            Q_input, R_input, p=m_tilde - m, U=U, b=b, e=b_tilde_corr[m:m_tilde], k=m
+        )
         duration_own = time.time() - start
 
         print(Q_tilde.shape, Q_tilde_corr.shape)
@@ -367,6 +372,14 @@ def test_del_col(size: tuple, modified_sizes: list) -> pd.DataFrame:
         Q_input, R_input = np.copy(Q), np.copy(R)
         # for i in range(0, m - m_tilde):
         Q_tilde, R_tilde, residual = alg.qr_delete_col(Q_input, R_input, b, k=0)
+        duration_own = time.time() - start
+
+        # With own blocked implementation.
+        start = time.time()
+        Q_input, R_input = np.copy(Q), np.copy(R)
+        Q_tilde, R_tilde, residual = balg.qr_delete_col(
+            Q_input, R_input, b, p=n - n_tilde, k=0
+        )
         duration_own = time.time() - start
 
         print(Q_tilde.shape, Q_tilde_corr.shape)

@@ -227,7 +227,6 @@ def qr_add_row(
         mu = s * t1 + c * t2
 
     R_tilde = np.append(R, np.zeros((1, n)), axis=0)
-    print(R.shape, np.zeros((1, n)).shape, R_tilde.shape)
     d_tilde = np.append(d, mu)
     resid = np.linalg.norm(d_tilde[n + 1:m + 1], ord=2)
 
@@ -273,7 +272,7 @@ def qr_delete_col(
         k: int
 ) -> Tuple[np.ndarray, np.ndarray, np.float]:
     """
-    Updates Q and R by adding one single column with index k.
+    Updates Q and R by deleting one single column at index k.
     :param Q:
     :param R:
     :param b:
