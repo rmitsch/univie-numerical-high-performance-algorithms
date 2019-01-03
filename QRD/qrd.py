@@ -82,7 +82,7 @@ if __name__ == '__main__':
 
     # results_df = tests.test_del_row((10, 5), [(9, 5)])
     # results_df = tests.test_add_row((10, 5), [(12, 5)])
-    results_df = tests.test_del_col((10, 5), [(10, 4)])
+    # results_df = tests.test_del_col((10, 5), [(10, 4)])
     # results_df = tests.test_add_col((10, 5), [(10, 6)])
 
     plt.grid(True)

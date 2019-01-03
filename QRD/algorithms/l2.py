@@ -30,9 +30,8 @@ def householder(alpha: float, x: np.ndarray) -> Tuple[np.ndarray, float]:
     return v, tau
 
 
-
 #@numba.jit(nopython=False)
-def qr_delete_row(
+def qr_delete_rows(
         Q: np.ndarray,
         R: np.ndarray,
         b: np.ndarray,
@@ -40,7 +39,7 @@ def qr_delete_row(
         k: int
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.float]:
     """
-    Updates Q and R after deleting one single row with index k.
+    Updates Q and R after deleting a set of rows starting with index k.
     :param Q:
     :param R:
     :param b: b in Ax = b.
@@ -101,7 +100,7 @@ def qr_delete_row(
 
 
 #@numba.jit(nopython=False)
-def qr_add_row(
+def qr_add_rows(
         Q: np.ndarray,
         R: np.ndarray,
         b: np.ndarray,
@@ -111,7 +110,7 @@ def qr_add_row(
         k: int
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.float]:
     """
-    Updates Q and R after deleting one single row with index k.
+    Updates Q and R after adding a set of rows starting with index k.
     :param Q:
     :param R:
     :param b: b in Ax = b.
@@ -192,7 +191,7 @@ def qr_add_row(
 
 
 #@numba.jit(nopython=False)
-def qr_delete_col(
+def qr_delete_cols(
         Q: np.ndarray,
         R: np.ndarray,
         b: np.ndarray,
@@ -254,3 +253,75 @@ def qr_delete_col(
     return Q, R_tilde, resid
 
 
+#@numba.jit(nopython=False)
+def qr_add_cols(
+        Q: np.ndarray,
+        R: np.ndarray,
+        b: np.ndarray,
+        p: int,
+        U: np.ndarray,
+        k: int
+) -> Tuple[np.ndarray, np.ndarray, np.float]:
+    """
+    Updates Q and R after adding a set of columns starting with index k.
+    :param Q:
+    :param R:
+    :param b: b in Ax = b.
+    :param p: Number of observations to remove starting from k.
+    :param U: Rows to insert.
+    :param e: Ux = e. To be inserted in b at index k. Equivalent to mu in single row addition.
+    :param k:
+    :return:
+    """
+
+    m, n = Q.shape[0], R.shape[1]
+    C = np.zeros((m, m))
+    S = np.zeros((m, m))
+
+    ###################################
+    # Algorithm 2.21 - compute R_tilde.
+    ###################################
+
+    U = Q.T @ U
+    d_tilde = Q.T @ b
+
+    for j in np.arange(start=0, stop=p, step=1):
+        for i in np.arange(start=m - 1, stop=k + j - 1):
+            C[i, j], S[i, j] = givens(U[i - 1, j], U[i, j])
+            cs_matrix = np.asarray([[C[i, j], C[i, j]], [-S[i, j], C[i, j]]])
+
+            U[i - 1, j] = C[i, j] * U[i - 1, j] - S[i, j] * U[i, j]
+
+            if j + 1 < p:
+                U[i - 1:i + 1, j + 1:p] = cs_matrix.T @ U[i - 1:i + 1, j + 1:p]
+
+            if i <= n + j:
+                R[i - 1:i + 1, i - j:] = cs_matrix.T @ d_tilde[i - 1:i + 1]
+
+            d_tilde[i - 1:i + 1] = cs_matrix.T @ d_tilde[i - 1:i + 1]
+
+    R_tilde = np.zeros((m, p + n))
+    if k == 0:
+        R_tilde[:, :p] = U
+        R_tilde[:, p:] = R
+    elif k == n:
+        R_tilde[:, :n] = R
+        R_tilde[:, n:] = U
+    else:
+        R_tilde[:, :k - 1] = R[:, :k - 1]
+        R_tilde[:, k - 1:k - 1 + p] = U
+        R_tilde[:, k - 1 + p:] = R[:, k - 1:]
+    R_tilde = np.triu(R_tilde)
+
+    resid = np.linalg.norm(d_tilde[n:], ord=2)
+
+    ###################################
+    # Algorithm 2.22 - compute Q_tilde.
+    ###################################
+
+    for j in np.arange(start=0, stop=p, step=1):
+        for i in np.arange(start=m - 1, stop=k + j - 1):
+            cs_matrix = np.asarray([[C[i, j], C[i, j]], [-S[i, j], C[i, j]]])
+            Q[:, i - 1:i + 1] = Q[:, i - 1:i + 1] @ cs_matrix
+
+    return Q, R_tilde, resid

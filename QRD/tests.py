@@ -1,5 +1,5 @@
 import numpy as np
-from algorithms import l1 as alg, l2 as balg
+from algorithms import l1 as alg1, l2 as alg2, l3 as alg3
 import time
 from tqdm import tqdm
 import scipy
@@ -46,9 +46,9 @@ def test_generation_from_scratch(sizes: list) -> pd.DataFrame:
         scipy.linalg.qr(A)
         duration_lib = time.time() - start
 
-        # With own implementation.
+        # With own implementation..
         start = time.time()
-        Q, R = alg.qr_decomposition(A)
+        Q, R = alg1.qr_decomposition(A)
         duration_own = time.time() - start
 
         #################################################################
@@ -62,8 +62,8 @@ def test_generation_from_scratch(sizes: list) -> pd.DataFrame:
         results["m"].append(m)
         results["n"].append(n)
         results["mn"].append(m * n)
-        results["res_norm_QR"].append(alg.compute_residual(alg.matmul(Q_eval, R_eval), A))
-        results["res_norm_Axb"].append(alg.compute_residual(scipy.linalg.solve(R_eval, np.dot(Q_eval.T, b)), x))
+        results["res_norm_QR"].append(alg1.compute_residual(alg1.matmul(Q_eval, R_eval), A))
+        results["res_norm_Axb"].append(alg1.compute_residual(scipy.linalg.solve(R_eval, np.dot(Q_eval.T, b)), x))
 
         pbar.update(m * n)
     pbar.close()
@@ -138,19 +138,19 @@ def test_del_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
         # print(np.allclose(np.dot(Q_tilde_corr, R_tilde_corr), np.dot(Q_tilde_update, R_tilde_update)))
         duration_scipy_update = time.time() - start
 
-        # With own implementation.
+        # With own L1 implementation..
         start = time.time()
         Q_input, R_input = np.copy(Q), np.copy(R)
         b_tilde = np.copy(b)
         # for i in range(0, m - m_tilde):
-        Q_tilde, R_tilde, b_tilde, residual = alg.qr_delete_row(Q_input, R_input, b, k=0)
+        Q_tilde, R_tilde, b_tilde, residual = alg1.qr_delete_row(Q_input, R_input, b, k=0)
         duration_own = time.time() - start
 
-        # With own blocked implementation.
+        # With own L2 implementation.
         start = time.time()
         Q_input, R_input = np.copy(Q), np.copy(R)
         b_tilde = np.copy(b)
-        Q_tilde, R_tilde, b_tilde, residual = balg.qr_delete_row(Q_input, R_input, b, p=1, k=0)
+        Q_tilde, R_tilde, b_tilde, residual = alg2.qr_delete_rows(Q_input, R_input, b, p=1, k=0)
         duration_own = time.time() - start
 
         print(b_tilde.shape, b_tilde_corr.shape)
@@ -171,7 +171,7 @@ def test_del_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
 
         # print(scipy.linalg.solve(R_tilde_eval, np.dot(Q_tilde_eval.T, b_tilde)))
         try:
-            print(alg.compute_residual(
+            print(alg1.compute_residual(
                 scipy.linalg.solve(R_tilde_eval, np.dot(Q_tilde_eval.T, b_tilde)), x_tilde
             ))
         except np.linalg.LinAlgError as e:
@@ -185,10 +185,10 @@ def test_del_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
         results["m"].append(m)
         results["n"].append(n)
         results["mn"].append(m * n)
-        results["res_norm_QR"].append(alg.compute_residual(
-            alg.matmul(Q_tilde_eval, R_tilde_eval), A_tilde
+        results["res_norm_QR"].append(alg1.compute_residual(
+            alg1.matmul(Q_tilde_eval, R_tilde_eval), A_tilde
         ))
-        results["res_norm_Axb"].append(alg.compute_residual(
+        results["res_norm_Axb"].append(alg1.compute_residual(
             scipy.linalg.solve(R_tilde_eval, np.dot(Q_tilde_eval.T, b_tilde)), x_tilde
         ))
 
@@ -258,17 +258,17 @@ def test_add_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
         # print(np.allclose(np.dot(Q_tilde_corr, R_tilde_corr), np.dot(Q_tilde_update, R_tilde_update)))
         duration_scipy_update = time.time() - start
 
-        # With own implementation.
+        # With own L1 implementation..
         start = time.time()
         Q_input, R_input = np.copy(Q), np.copy(R)
         # for i in range(0, m - m_tilde):
-        Q_tilde, R_tilde, b_tilde, residual = alg.qr_add_row(Q_input, R_input, u=U[0], b=b, mu=b_tilde_corr[m:][0], k=m)
+        Q_tilde, R_tilde, b_tilde, residual = alg1.qr_add_row(Q_input, R_input, u=U[0], b=b, mu=b_tilde_corr[m:][0], k=m)
         duration_own = time.time() - start
 
-        # With own blocked implementation.
+        # With own L2 implementation.
         start = time.time()
         Q_input, R_input = np.copy(Q), np.copy(R)
-        Q_tilde, R_tilde, b_tilde, residual = balg.qr_add_row(
+        Q_tilde, R_tilde, b_tilde, residual = alg2.qr_add_rows(
             Q_input, R_input, p=m_tilde - m, U=U, b=b, e=b_tilde_corr[m:m_tilde], k=m
         )
         duration_own = time.time() - start
@@ -286,7 +286,7 @@ def test_add_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
         Q_tilde_eval = Q_tilde.T[:n].T
         R_tilde_eval = np.triu(R_tilde[:n])
 
-        print(alg.compute_residual(
+        print(alg1.compute_residual(
             scipy.linalg.solve(R_tilde_eval, np.dot(Q_tilde_eval.T, b_tilde)), x_tilde
         ))
         exit()
@@ -298,10 +298,10 @@ def test_add_row(size: tuple, modified_sizes: list) -> pd.DataFrame:
         results["m"].append(m)
         results["n"].append(n)
         results["mn"].append(m * n)
-        results["res_norm_QR"].append(alg.compute_residual(
-            alg.matmul(Q_tilde_eval, R_tilde_eval), A_tilde
+        results["res_norm_QR"].append(alg1.compute_residual(
+            alg1.matmul(Q_tilde_eval, R_tilde_eval), A_tilde
         ))
-        results["res_norm_Axb"].append(alg.compute_residual(
+        results["res_norm_Axb"].append(alg1.compute_residual(
             scipy.linalg.solve(R_tilde_eval, np.dot(Q_tilde_eval.T, b_tilde)), x_tilde
         ))
 
@@ -367,17 +367,17 @@ def test_del_col(size: tuple, modified_sizes: list) -> pd.DataFrame:
         # print(np.allclose(np.dot(Q_tilde_corr, R_tilde_corr), np.dot(Q_tilde_update, R_tilde_update)))
         duration_scipy_update = time.time() - start
 
-        # With own implementation.
+        # With own L1 implementation..
         start = time.time()
         Q_input, R_input = np.copy(Q), np.copy(R)
         # for i in range(0, m - m_tilde):
-        Q_tilde, R_tilde, residual = alg.qr_delete_col(Q_input, R_input, b, k=0)
+        Q_tilde, R_tilde, residual = alg1.qr_delete_col(Q_input, R_input, b, k=0)
         duration_own = time.time() - start
 
-        # With own blocked implementation.
+        # With own L2 implementation.
         start = time.time()
         Q_input, R_input = np.copy(Q), np.copy(R)
-        Q_tilde, R_tilde, residual = balg.qr_delete_col(
+        Q_tilde, R_tilde, residual = alg2.qr_delete_cols(
             Q_input, R_input, b, p=n - n_tilde, k=0
         )
         duration_own = time.time() - start
@@ -394,7 +394,7 @@ def test_del_col(size: tuple, modified_sizes: list) -> pd.DataFrame:
         Q_tilde_eval = Q_tilde.T[:n - 1].T
         R_tilde_eval = np.triu(R_tilde[:n - 1])
 
-        print(alg.compute_residual(
+        print(alg1.compute_residual(
             scipy.linalg.solve(R_tilde_eval, np.dot(Q_tilde_eval.T, b_tilde_corr)), x_tilde
         ))
         exit()
@@ -406,10 +406,10 @@ def test_del_col(size: tuple, modified_sizes: list) -> pd.DataFrame:
         results["m"].append(m)
         results["n"].append(n)
         results["mn"].append(m * n)
-        results["res_norm_QR"].append(alg.compute_residual(
-            alg.matmul(Q_tilde_eval, R_tilde_eval), A_tilde
+        results["res_norm_QR"].append(alg1.compute_residual(
+            alg1.matmul(Q_tilde_eval, R_tilde_eval), A_tilde
         ))
-        results["res_norm_Axb"].append(alg.compute_residual(
+        results["res_norm_Axb"].append(alg1.compute_residual(
             scipy.linalg.solve(R_tilde_eval, np.dot(Q_tilde_eval.T, b_tilde_corr)), x_tilde
         ))
 
@@ -443,8 +443,8 @@ def test_add_col(size: tuple, modified_sizes: list) -> pd.DataFrame:
         assert n_tilde > n, "Make sure that n_tilde > n."
         A_tilde = np.zeros((m, n_tilde))
         A_tilde[:, :n] = A
-        u = np.random.rand(m, n_tilde - n)
-        A_tilde[:, n:] = u
+        U = np.random.rand(m, n_tilde - n)
+        A_tilde[:, n:] = U
 
         ################################################################
         # Generate data and compute correct results for solving Ax = b
@@ -465,18 +465,24 @@ def test_add_col(size: tuple, modified_sizes: list) -> pd.DataFrame:
 
         # With scipy's qr_remove().
         start = time.time()
-        Q_tilde_corr, R_tilde_corr = scipy_qr_update.qr_insert(Q, R, k=0, u=u, which="col")
+        Q_tilde_corr, R_tilde_corr = scipy_qr_update.qr_insert(Q, R, k=0, u=U, which="col")
         # print(np.allclose(np.dot(Q_tilde_corr, R_tilde_corr), np.dot(Q_tilde_update, R_tilde_update)))
         duration_scipy_update = time.time() - start
 
-        # With own implementation.
+        # With own L1 implementation..
         start = time.time()
         Q_input, R_input = np.copy(Q), np.copy(R)
-
         # for i in range(0, m - m_tilde):
-        Q_tilde, R_tilde, residual = alg.qr_add_col(Q_input, R_input, u=u[:, 0], b=b, k=n)
+        Q_tilde, R_tilde, residual = alg1.qr_add_col(Q_input, R_input, u=U[:, 0], b=b, k=n)
         duration_own = time.time() - start
 
+        # With own L2 implementation..
+        start = time.time()
+        Q_input, R_input = np.copy(Q), np.copy(R)
+        
+        Q_tilde, R_tilde, residual = alg2.qr_add_cols(Q_input, R_input, U=U, p=n_tilde - n, b=b, k=n)
+        duration_own = time.time() - start
+        
         print(Q_tilde.shape, Q_tilde_corr.shape)
         print(R_tilde.shape, R_tilde_corr.shape)
         print(np.allclose(np.dot(Q_tilde_corr, R_tilde_corr), np.dot(Q_tilde, R_tilde)))
@@ -489,7 +495,7 @@ def test_add_col(size: tuple, modified_sizes: list) -> pd.DataFrame:
         Q_tilde_eval = Q_tilde.T[:n + 1].T
         R_tilde_eval = np.triu(R_tilde[:n + 1])
 
-        print(alg.compute_residual(
+        print(alg1.compute_residual(
             scipy.linalg.solve(R_tilde_eval, np.dot(Q_tilde_eval.T, b_tilde_corr)), x_tilde
         ))
         exit()
@@ -501,10 +507,10 @@ def test_add_col(size: tuple, modified_sizes: list) -> pd.DataFrame:
         results["m"].append(m)
         results["n"].append(n)
         results["mn"].append(m * n)
-        results["res_norm_QR"].append(alg.compute_residual(
-            alg.matmul(Q_tilde_eval, R_tilde_eval), A_tilde
+        results["res_norm_QR"].append(alg1.compute_residual(
+            alg1.matmul(Q_tilde_eval, R_tilde_eval), A_tilde
         ))
-        results["res_norm_Axb"].append(alg.compute_residual(
+        results["res_norm_Axb"].append(alg1.compute_residual(
             scipy.linalg.solve(R_tilde_eval, np.dot(Q_tilde_eval.T, b_tilde_corr)), x_tilde
         ))
 
