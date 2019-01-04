@@ -5,7 +5,8 @@ import pandas as pd
 from algorithms import l1 as alg1
 
 
-METHODS = ["l1", "l2", "l3", "scipy_scratch", "scipy_update"]
+METHODS = ["l2_scratch", "l1", "l2", "l3", "scipy_scratch", "scipy_update"]
+
 
 def create_logger(name: str):
     """

@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Tuple
-from algorithms.l1 import givens
+from algorithms.l1 import givens, qr_decomposition
 from algorithms.l2 import householder
 
 
@@ -44,12 +44,15 @@ def qr_add_rows(
         jb = min(bs, n - k + 1)
 
         if k + jb <= n:
-            T = np.zeros((n, n))
-            for j in np.arange(start=k, stop = k + jb, step=1):
+            T = np.zeros((jb, jb))
+            for j in np.arange(start=k, stop=k + jb - 2, step=1):
                 if j == k:
                     T[0, 0] = tau[j]
                 else:
-                    T[:j - k, j - k + 2] = -tau[j] * T[:j - k, j - k + 2] * V[:, k:j - 1].T @ V[:, j]
+                    T[:j - k, j - k + 2] = - (
+                            tau[j] * T[:j - k, j - k + 2] *
+                            (V[:, k:j - 0].T @ V[:, j])
+                    )
                     T[j - k + 1, j - k + 1] = tau[j]
 
             T_v = T.T @ V[:, k:k + jb].T
@@ -58,8 +61,11 @@ def qr_add_rows(
 
             d_k = d[k:k + jb]
             e_k = e
-            d[k:k + jb] = d_k - T.T @ d_k + e_k - V[:, k:k + jb] @ T_e
-            e = -V[:, k:k + jb] @ T.T @ d_k - T_e
+            d[k:k + jb] = d_k - T.T @ d_k - T_e
+            e = \
+                -V[:, k:k + jb] @ T.T @ d_k + \
+                e_k - \
+                V[:, k:k + jb] @ T_e
 
             R_k = R[k: k + jb, k + jb:]
             U_k = U[:, k + jb:]
@@ -87,7 +93,7 @@ def qr_add_rows(
     if k != m:
         insert_pos = k if k == 0 else k - 1
         Q_tilde[insert_pos:insert_pos + p] = Q_tilde[m:m + p, :]
-        Q_tilde[insert_pos + p:] = Q_tilde[k:m, :]
+        Q_tilde[k + p:] = Q_tilde[k:m, :]
 
     for j in np.arange(start=0, stop=n, step=1):
         Q_tilde_k = Q_tilde[:, j]
@@ -104,41 +110,6 @@ def qr_add_rows(
     b_tilde[k + p:] = b[k:]
 
     return Q_tilde, R_tilde, b_tilde, resid
-
-
-#@numba.jit(nopython=False)
-def qr_delete_cols(
-        Q: np.ndarray,
-        R: np.ndarray,
-        b: np.ndarray,
-        k: int,
-        p: int
-) -> Tuple[np.ndarray, np.ndarray, np.float]:
-    """
-    Updates Q and R by deleting a set of columns starting with index k.
-    :param Q:
-    :param R:
-    :param b:
-    :param k:
-    :param p: Number of cols to delete.
-    :return:
-    """
-
-    m, n = Q.shape[0], R.shape[1]
-    V = np.zeros((m, m))
-    tau = np.zeros((m,))
-
-    ###################################
-    # Algorithm 2.15 - compute R_tilde.
-    ###################################
-
-
-    ###################################
-    # Algorithm 2.16 - compute Q_tilde.
-    ###################################
-
-
-    return Q, R_tilde, resid
 
 
 #@numba.jit(nopython=False)
@@ -167,11 +138,57 @@ def qr_add_cols(
     S = np.zeros((m, m))
 
     ###################################
-    # Algorithm 2.21 - compute R_tilde.
+    # Algorithm 2.23 - compute R_tilde.
     ###################################
+
+    U = Q.T @ U
+    d_tilde = Q.T @ b
+
+    if m > n + 1:
+        Q_u, R_u = qr_decomposition(U[n:m, :])
+        d_tilde[n :m] = Q_u.T @ d_tilde[n:m]
+
+    if k <= n:
+        for j in np.arange(start=0, stop=p , step=1):
+            upfirst = n - 1
+            for i in np.arange(start=n + j, stop=j, step=-1):
+                C[i, j], S[i, j] = givens(U[i - 1, j], U[i, j])
+                cs_matrix = np.asarray([[C[i, j], C[i, j]], [-S[i, j], C[i, j]]])
+                U[i - 1, j] = C[i, j] * U[i - 1, j] - S[i, j] * U[i, j]
+
+                if j < p - 1:
+                    U[i - 1:i + 1, j + 1:p] = cs_matrix.T @ U[i - 1:i + 1, j + 1:p]
+
+                R[i - 1: i + 1, upfirst:n] = cs_matrix.T @ R[i - 1: i + 1, upfirst:n]
+                upfirst -= 1
+                d_tilde[i - 1:i + 1] = cs_matrix.T @ d_tilde[i - 1:i + 1]
+
+    R_tilde = np.zeros((m, p + n))
+    if k == 0:
+        R_tilde[:, :p] = U
+        R_tilde[:, p:] = R
+    elif k == n:
+        R_tilde[:, :n] = R
+        R_tilde[:, n:] = U
+    else:
+        R_tilde[:, :k] = R[:, :k]
+        R_tilde[:, k:k + p] = U
+        R_tilde[:, k + p:] = R[:, k:]
+    R_tilde = np.triu(R_tilde)
+
+    resid = np.linalg.norm(d_tilde[n:], ord=2)
 
     ###################################
     # Algorithm 2.22 - compute Q_tilde.
     ###################################
+
+    if m > n + 1:
+        Q[:, :m - n] = Q[:, :m - n] @ Q_u
+
+    if k <= n - 1:
+        for j in np.arange(start=0, stop=p, step=1):
+            for i in np.arange(start=n + j, stop=j, step=-1):
+                cs_matrix = np.asarray([[C[i, j], C[i, j]], [-S[i, j], C[i, j]]])
+                Q[:, i - 1:i + 1] = Q[:, i - 1:i + 1] @ cs_matrix
 
     return Q, R_tilde, resid

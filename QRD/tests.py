@@ -6,6 +6,7 @@ import scipy
 import scipy.linalg._decomp_update as scipy_qr_update
 import pandas as pd
 import utils
+from typing import Tuple
 
 
 def test_generation_from_scratch(sizes: list) -> pd.DataFrame:
@@ -86,6 +87,9 @@ def test_del_rows(size: tuple, row_sizes: list) -> pd.DataFrame:
         # With recalculating from scratch with numpy().
         Q_tilde_corr, R_tilde_corr = compute_reference_QR(A_tilde, results)
 
+        # With own implementation from scratch.
+        compute_own_QR(A_tilde, Q_tilde_corr, R_tilde_corr, x_tilde, b_tilde_corr, results)
+
         # With scipy's QR update.
         start = time.time()
         Q_tilde, R_tilde = scipy_qr_update.qr_delete(Q, R, k=0, p=p, which="row")
@@ -156,6 +160,9 @@ def test_add_rows(size: tuple, row_sizes: list) -> pd.DataFrame:
         # With recalculating from scratch with numpy().
         Q_tilde_corr, R_tilde_corr = compute_reference_QR(A_tilde, results)
 
+        # With own implementation from scratch.
+        compute_own_QR(A_tilde, Q_tilde_corr, R_tilde_corr, x_tilde, b_tilde_corr, results)
+
         # With scipy's QR update.
         start = time.time()
         Q_tilde, R_tilde = scipy_qr_update.qr_insert(Q, R, k=m, u=U, which="row")
@@ -166,8 +173,8 @@ def test_add_rows(size: tuple, row_sizes: list) -> pd.DataFrame:
         )
 
         # With own L1 implementation..
-        start = time.time()
         Q_tilde, R_tilde, b_tilde = np.copy(Q), np.copy(R), np.copy(b)
+        start = time.time()
         for i in range(m_tilde - m - 1, -1, -1):
             Q_tilde, R_tilde, b_tilde, residual = alg1.qr_add_row(
                 Q_tilde, R_tilde, u=U[i], b=b_tilde, mu=b_tilde_corr[m:][i], k=0
@@ -240,6 +247,9 @@ def test_del_cols(size: tuple, col_sizes: list) -> pd.DataFrame:
         # With recalculating from scratch with numpy().
         Q_tilde_corr, R_tilde_corr = compute_reference_QR(A_tilde, results)
 
+        # With own implementation from scratch.
+        compute_own_QR(A_tilde, Q_tilde_corr, R_tilde_corr, x_tilde, b_tilde_corr, results)
+
         # With scipy's QR update.
         start = time.time()
         Q_tilde, R_tilde = scipy_qr_update.qr_delete(Q, R, k=0, p=p, which="col")
@@ -311,6 +321,9 @@ def test_add_cols(size: tuple, col_sizes: list) -> pd.DataFrame:
         # With recalculating from scratch with numpy().
         Q_tilde_corr, R_tilde_corr = compute_reference_QR(A_tilde, results)
 
+        # With own implementation from scratch.
+        compute_own_QR(A_tilde, Q_tilde_corr, R_tilde_corr, x_tilde, b_tilde_corr, results)
+
         # With scipy's QR update.
         start = time.time()
         Q_tilde, R_tilde = scipy_qr_update.qr_insert(Q, R, k=0, u=U, which="col")
@@ -337,6 +350,14 @@ def test_add_cols(size: tuple, col_sizes: list) -> pd.DataFrame:
             x_tilde, b_tilde_corr, Q_tilde.T[:n + p].T, np.triu(R_tilde[:n + p])
         )
 
+        # With own L3 implementation.
+        start = time.time()
+        Q_tilde, R_tilde, residual = alg3.qr_add_cols(np.copy(Q), np.copy(R), U=U, p=p, b=b, k=0)
+        utils.update_measurements(
+            results, "l3", time.time() - start, A_tilde, Q_tilde_corr.T[:n + p].T, np.triu(R_tilde_corr[:n + p]),
+            x_tilde, b_tilde_corr, Q_tilde.T[:n + p].T, np.triu(R_tilde[:n + p])
+        )
+
         pbar.update(m * n_tilde)
 
     pbar.close()
@@ -356,3 +377,26 @@ def compute_reference_QR(A: np.ndarray, results: dict):
     utils.update_measurements(results, "scipy_scratch", time.time() - start, A, compute_accuracy=False)
 
     return Q, R
+
+
+def compute_own_QR(
+        A: np.ndarray, Q_prime: np.ndarray, R_prime: np.ndarray, x_prime: np.ndarray, b_prime: np.ndarray, results: dict
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Computes QR decomposition with own method.
+    :param A:
+    :param A_prime:
+    :param results:
+    :return:
+    """
+
+    m, n = A.shape
+
+    start = time.time()
+    Q_tilde, R_tilde = alg1.qr_decomposition(A)
+    utils.update_measurements(
+        results, "l2_scratch", time.time() - start, A, Q_prime[:, :n], np.triu(R_prime[:n]),
+        x_prime, b_prime, Q_tilde[:, :n], np.triu(R_tilde[:n])
+    )
+
+    return Q_tilde, R_tilde

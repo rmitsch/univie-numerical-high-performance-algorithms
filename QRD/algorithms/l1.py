@@ -4,7 +4,7 @@ import numba
 import math
 
 
-@numba.jit(nopython=True)
+#@numba.jit(nopython=True)
 def householder(x: np.ndarray) -> Tuple[np.ndarray, int]:
     """
     Computes v and tau for Householder transformation of x.
@@ -37,7 +37,7 @@ def householder(x: np.ndarray) -> Tuple[np.ndarray, int]:
     return v, tau
 
 
-@numba.jit(nopython=False)
+#@numba.jit(nopython=False)
 def givens(a: float, b: float) -> Tuple[float, float]:
     """
     Calculate Givens rotation with two scalars.
@@ -62,7 +62,7 @@ def givens(a: float, b: float) -> Tuple[float, float]:
     return c, s
 
 
-@numba.jit(nopython=False)
+#@numba.jit(nopython=False)
 def qr_decomposition(A: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     Decomposes rectangular matrix A in matrices Q and R.
@@ -88,7 +88,7 @@ def qr_decomposition(A: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     return Q.T, R  # Q[:n].T, np.triu(R[:n])
 
 
-@numba.jit(nopython=False)
+#@numba.jit(nopython=False)
 def compute_residual(A_prime: np.ndarray, A: np.ndarray):
     """
     Compute residual norm for approximation A_prime of A.
@@ -99,18 +99,7 @@ def compute_residual(A_prime: np.ndarray, A: np.ndarray):
     return np.linalg.norm(A_prime - A) / np.linalg.norm(A)
 
 
-def compile_functions_with_numba():
-    """
-    Calls all numba-decorated function with dummy data so that they are compiled lazily.
-    :return:
-    """
-
-    A = np.random.rand(5, 5)
-    A_prime = qr_decomposition(A)
-    matmul(A, A_prime)
-
-
-@numba.jit(nopython=False)
+#@numba.jit(nopython=False)
 def matmul(A: np.ndarray, B: np.ndarray) -> np.ndarray:
     """
     Numba-assisted matrix multiplication with numpy.

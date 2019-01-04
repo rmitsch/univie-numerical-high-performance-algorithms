@@ -307,9 +307,9 @@ def qr_add_cols(
         R_tilde[:, :n] = R
         R_tilde[:, n:] = U
     else:
-        R_tilde[:, :k - 1] = R[:, :k - 1]
-        R_tilde[:, k - 1:k - 1 + p] = U
-        R_tilde[:, k - 1 + p:] = R[:, k - 1:]
+        R_tilde[:, :k] = R[:, :k]
+        R_tilde[:, k:k + p] = U
+        R_tilde[:, k + p:] = R[:, k:]
     R_tilde = np.triu(R_tilde)
 
     resid = np.linalg.norm(d_tilde[n:], ord=2)
@@ -324,3 +324,4 @@ def qr_add_cols(
             Q[:, i - 1:i + 1] = Q[:, i - 1:i + 1] @ cs_matrix
 
     return Q, R_tilde, resid
+
