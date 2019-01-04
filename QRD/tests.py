@@ -98,7 +98,7 @@ def test_del_rows(size: tuple, row_sizes: list) -> pd.DataFrame:
             np.triu(R_tilde_corr[:n]), x_tilde, b_tilde_corr, Q_tilde[:, :n], np.triu(R_tilde[:n])
         )
 
-        # With own L1 implementation..
+        # With own L1 implementation.
         Q_tilde, R_tilde, b_tilde = np.copy(Q), np.copy(R), np.copy(b)
         start = time.time()
         for i in range(0, p):
@@ -172,13 +172,16 @@ def test_add_rows(size: tuple, row_sizes: list) -> pd.DataFrame:
             np.triu(R_tilde_corr[:n]), x_tilde, b_tilde_corr, Q_tilde[:, :n], np.triu(R_tilde[:n])
         )
 
-        # With own L1 implementation..
+        # With own L1 implementation.
         Q_tilde, R_tilde, b_tilde = np.copy(Q), np.copy(R), np.copy(b)
         start = time.time()
-        for i in range(m_tilde - m - 1, -1, -1):
+        for i in range(m, m_tilde, 1):
+            print("#", i)
             Q_tilde, R_tilde, b_tilde, residual = alg1.qr_add_row(
-                Q_tilde, R_tilde, u=U[i], b=b_tilde, mu=b_tilde_corr[m:][i], k=0
+                Q_tilde, R_tilde, u=U[i - m], b=b_tilde, mu=b_tilde_corr[i:][0], k=m
             )
+        print(b_tilde_corr - b_tilde)
+
         utils.update_measurements(
             results, "l1", time.time() - start, A_tilde, Q_tilde_corr[:, :n], np.triu(R_tilde_corr[:n]),
             x_tilde, b_tilde_corr, Q_tilde[:, :n], np.triu(R_tilde[:n])

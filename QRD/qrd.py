@@ -91,11 +91,13 @@ if __name__ == '__main__':
         # results_df.plot(x="m", y=time_col_names, logy=True, title="Deleting rows")
         # plt.grid(True)
 
-        results_df = tests.test_add_rows((600, 500), [700, 800, 900])
+        results_df = tests.test_add_rows((6, 5), [7])
         results_df.plot(x="m", y=time_col_names, logy=True, title="Inserting rows")
-        plt.grid(True)
         print(results_df)
         print(results_df[["l1_rn_Axb", "l1_rn_QR"]])
+        exit()
+        plt.grid(True)
+
 
         # results_df = tests.test_del_cols((1000, 900), [800, 700, 600, 500, 400, 300, 200, 100])
         # results_df.plot(x="n", y=time_col_names, logy=True, title="Deleting columns")

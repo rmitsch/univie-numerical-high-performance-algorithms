@@ -191,8 +191,14 @@ def qr_add_row(
     :return:
     """
 
-    m, n = Q.shape[0], R.shape[1]
-    cs_values = np.zeros((m, 2))
+    m, n = R.shape
+    c = np.zeros((m,))
+    s = np.zeros((m,))
+
+    b_tilde = np.zeros((m + 1, 1))
+    b_tilde[:k] = b[:k]
+    b_tilde[k] = mu
+    b_tilde[k + 1:] = b[k:]
 
     ###################################
     # Algorithm 2.6 - compute R_tilde.
@@ -200,23 +206,22 @@ def qr_add_row(
 
     d = Q.T @ b
     for j in np.arange(0, n):
-        c, s = givens(R[j, j], u[j])
-        cs_values[j] = [c, s]
-        R[j, j] = c * R[j, j] - s * u[j]
+        c[j], s[j] = givens(R[j, j], u[j])
+        R[j, j] = c[j] * R[j, j] - s[j] * u[j]
 
         t1 = R[j, j + 1:]
         t2 = u[j + 1:]
-        R[j, j + 1:] = c * t1 - s * t2
-        u[j + 1:] = s * t1 + c * t2
+        R[j, j + 1:] = c[j] * t1 - s[j] * t2
+        u[j + 1:] = s[j] * t1 + c[j] * t2
 
         t1 = d[j]
         t2 = mu
-        d[j] = c * t1 - s * t2
-        mu = s * t1 + c * t2
+        d[j] = c[j] * t1 - s[j] * t2
+        mu = s[j] * t1 + c[j] * t2
 
     R_tilde = np.append(R, np.zeros((1, n)), axis=0)
     d_tilde = np.append(d, mu)
-    resid = np.linalg.norm(d_tilde[n + 1:m + 1], ord=2)
+    resid = np.linalg.norm(d_tilde[n:m + 1], ord=2)
 
     ###################################
     # Algorithm 2.7 - compute Q_tilde.
@@ -224,7 +229,7 @@ def qr_add_row(
 
     Q_tilde = np.zeros((m + 1, m + 1))
     Q_tilde[:m, :m] = Q
-    Q_tilde[m, n] = 1
+    Q_tilde[m, m] = 1
 
     if k != m:
         # Note that paper refers to Q here, not Q~. Specified indexing is not possible with Q though.
@@ -233,16 +238,10 @@ def qr_add_row(
         Q_tilde[k] = Q_m
 
     for j in np.arange(start=0, stop=n, step=1):
-        c, s = cs_values[j]
-        t1 = Q_tilde[:, j - 1]
+        t1 = Q_tilde[:, j]
         t2 = Q_tilde[:, m]
-        Q_tilde[:, j - 1] = c * t1 - s * t2
-        Q_tilde[:, m] = c * t1 - s * t2
-
-    b_tilde = np.zeros((m + 1, 1))
-    b_tilde[:k] = b[:k]
-    b_tilde[k] = mu
-    b_tilde[k + 1:] = b[k:]
+        Q_tilde[:, j] = c[j] * t1 - s[j] * t2
+        Q_tilde[:, m] = c[j] * t1 - s[j] * t2
 
     return Q_tilde, R_tilde, b_tilde, resid
 
