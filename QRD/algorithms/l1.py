@@ -4,8 +4,8 @@ import numba
 import math
 
 
-#@numba.jit(nopython=True)
-def householder(x: np.ndarray) -> Tuple[np.ndarray, int]:
+@numba.jit(nopython=True)
+def householder_vec(x: np.ndarray) -> Tuple[np.ndarray, int]:
     """
     Computes v and tau for Householder transformation of x.
     Note that
@@ -37,7 +37,7 @@ def householder(x: np.ndarray) -> Tuple[np.ndarray, int]:
     return v, tau
 
 
-#@numba.jit(nopython=False)
+@numba.jit(nopython=True)
 def givens(a: float, b: float) -> Tuple[float, float]:
     """
     Calculate Givens rotation with two scalars.
@@ -62,7 +62,7 @@ def givens(a: float, b: float) -> Tuple[float, float]:
     return c, s
 
 
-#@numba.jit(nopython=False)
+@numba.jit(nopython=True)
 def qr_decomposition(A: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     Decomposes rectangular matrix A in matrices Q and R.
@@ -79,7 +79,7 @@ def qr_decomposition(A: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 
     for j in range(0, n):
         # Apply Householder transformation.
-        v, tau = householder(R[j:, j])
+        v, tau = householder_vec(R[j:, j])
         H = np.identity(m)
         H[j:, j:] -= tau * v.reshape(-1, 1) * v
         R = H @ R
@@ -88,7 +88,7 @@ def qr_decomposition(A: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     return Q.T, R  # Q[:n].T, np.triu(R[:n])
 
 
-#@numba.jit(nopython=False)
+@numba.jit(nopython=True)
 def compute_residual(A_prime: np.ndarray, A: np.ndarray):
     """
     Compute residual norm for approximation A_prime of A.
@@ -99,7 +99,7 @@ def compute_residual(A_prime: np.ndarray, A: np.ndarray):
     return np.linalg.norm(A_prime - A) / np.linalg.norm(A)
 
 
-#@numba.jit(nopython=False)
+@numba.jit(nopython=True)
 def matmul(A: np.ndarray, B: np.ndarray) -> np.ndarray:
     """
     Numba-assisted matrix multiplication with numpy.
@@ -110,7 +110,7 @@ def matmul(A: np.ndarray, B: np.ndarray) -> np.ndarray:
     return A @ B
 
 
-#@numba.jit(nopython=False)
+# @numba.jit(nopython=False)
 def qr_delete_row(
         Q: np.ndarray,
         R: np.ndarray,
@@ -134,8 +134,7 @@ def qr_delete_row(
     # Algorithm 2.1 - compute R_tilde.
     ###################################
 
-    q_t = Q[k, :]
-    q = q_t.T
+    q = Q[k, :].T
 
     if k != 0:
         b[1:k + 1] = b[:k]
@@ -154,7 +153,7 @@ def qr_delete_row(
 
     R_tilde = R[1:, :]
     d_tilde = d[1:]
-    resid = np.linalg.norm(d_tilde[n:], ord=2)
+    resid = np.linalg.norm(d_tilde[n:m - 1], ord=2)
 
     ###################################
     # Algorithm 2.2 - compute Q_tilde.
@@ -163,7 +162,7 @@ def qr_delete_row(
     if k != 0:
         Q[1:k + 1, :] = Q[:k, :]
 
-    for j in np.arange(start=m - 2, step=-1, stop=-1):
+    for j in np.arange(start=m - 2, step=-1, stop=0):
         cs_matrix = np.asarray([[c[j], s[j]], [-s[j], c[j]]])
         Q[1:, j:j + 2] = Q[1:m, j:j + 2] @ cs_matrix
 
@@ -172,7 +171,7 @@ def qr_delete_row(
     return Q[1:, 1:], R_tilde, b[1:], resid
 
 
-#@numba.jit(nopython=False)
+@numba.jit(nopython=False)
 def qr_add_row(
         Q: np.ndarray,
         R: np.ndarray,
@@ -252,7 +251,7 @@ def qr_insert_col():
     pass
 
 
-#@numba.jit(nopython=False)
+@numba.jit(nopython=False)
 def qr_delete_col(
         Q: np.ndarray,
         R: np.ndarray,
@@ -302,7 +301,7 @@ def qr_delete_col(
     return Q, R_tilde, resid
 
 
-#@numba.jit(nopython=False)
+@numba.jit(nopython=False)
 def qr_add_col(
         Q: np.ndarray,
         R: np.ndarray,

@@ -2,9 +2,10 @@ import numpy as np
 from typing import Tuple
 from algorithms.l1 import givens, qr_decomposition
 from algorithms.l2 import householder
+import numba
 
 
-#@numba.jit(nopython=False)
+@numba.jit(nopython=False)
 def qr_add_rows(
         Q: np.ndarray,
         R: np.ndarray,
@@ -112,7 +113,7 @@ def qr_add_rows(
     return Q_tilde, R_tilde, b_tilde, resid
 
 
-#@numba.jit(nopython=False)
+@numba.jit(nopython=False)
 def qr_add_cols(
         Q: np.ndarray,
         R: np.ndarray,

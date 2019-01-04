@@ -99,8 +99,8 @@ def test_del_rows(size: tuple, row_sizes: list) -> pd.DataFrame:
         )
 
         # With own L1 implementation..
-        start = time.time()
         Q_tilde, R_tilde, b_tilde = np.copy(Q), np.copy(R), np.copy(b)
+        start = time.time()
         for i in range(0, p):
             Q_tilde, R_tilde, b_tilde, residual = alg1.qr_delete_row(Q_tilde, R_tilde, b_tilde, k=0)
         utils.update_measurements(
@@ -269,8 +269,9 @@ def test_del_cols(size: tuple, col_sizes: list) -> pd.DataFrame:
         )
 
         # With own L2 implementation.
+        Q_input, R_input = np.copy(Q), np.copy(R)
         start = time.time()
-        Q_tilde, R_tilde, residual = alg2.qr_delete_cols(np.copy(Q), np.copy(R), b, p=p, k=0)
+        Q_tilde, R_tilde, residual = alg2.qr_delete_cols(Q_input, R_input, b, p=p, k=0)
         utils.update_measurements(
             results, "l2", time.time() - start, A_tilde, Q_tilde_corr.T[:n_tilde].T, np.triu(R_tilde_corr[:n_tilde]),
             x_tilde, b_tilde_corr, Q_tilde.T[:n_tilde].T, np.triu(R_tilde[:n_tilde])
@@ -342,17 +343,19 @@ def test_add_cols(size: tuple, col_sizes: list) -> pd.DataFrame:
             x_tilde, b_tilde_corr, Q_tilde.T[:n + p].T, np.triu(R_tilde[:n + p])
         )
 
-        # With own L2 implementation..
+        # With own L2 implementation.
+        Q_input, R_input = np.copy(Q), np.copy(R)
         start = time.time()
-        Q_tilde, R_tilde, residual = alg2.qr_add_cols(np.copy(Q), np.copy(R), U=U, p=p, b=b, k=0)
+        Q_tilde, R_tilde, residual = alg2.qr_add_cols(Q_input, R_input, U=U, p=p, b=b, k=0)
         utils.update_measurements(
             results, "l2", time.time() - start, A_tilde, Q_tilde_corr.T[:n + p].T, np.triu(R_tilde_corr[:n + p]),
             x_tilde, b_tilde_corr, Q_tilde.T[:n + p].T, np.triu(R_tilde[:n + p])
         )
 
         # With own L3 implementation.
+        Q_input, R_input = np.copy(Q), np.copy(R)
         start = time.time()
-        Q_tilde, R_tilde, residual = alg3.qr_add_cols(np.copy(Q), np.copy(R), U=U, p=p, b=b, k=0)
+        Q_tilde, R_tilde, residual = alg3.qr_add_cols(Q_input, R_input, U=U, p=p, b=b, k=0)
         utils.update_measurements(
             results, "l3", time.time() - start, A_tilde, Q_tilde_corr.T[:n + p].T, np.triu(R_tilde_corr[:n + p]),
             x_tilde, b_tilde_corr, Q_tilde.T[:n + p].T, np.triu(R_tilde[:n + p])

@@ -49,16 +49,9 @@ Qs:
 """
 
 # todo
-#   - Prepare experimental run
 #   - presentation outline
 #   - search for indexing errors in l >= 1
-
-# a = np.asarray([0, 1, 2, 3])
-# print(a.shape)
-# print(a[:3])
-# print(a[2:3]) -> 2
-# print(a[2:4]) -> 2, 3
-# exit()
+#   - gather run results
 
 
 def compile_functions_with_numba():
@@ -80,22 +73,29 @@ if __name__ == '__main__':
     logger = utils.create_logger("logger")
     time_col_names = [method + "_time" for method in utils.METHODS]
 
+    # a = np.asarray([0, 1, 2, 3])
+    # print(a.shape)
+    # print(a[:3])
+    # print(a[2:3]) -> 2
+    # print(a[2:4]) -> 2, 3
+    # exit()
+
     # Compile functions with numba so that compilation time is not included in performance measurements.
     logger.info("Compiling numba functions.")
-    compile_functions_with_numba()
+    # compile_functions_with_numba()
 
     # Always: Q.shape = (m, m); R.shape = (m, n).
     logger.info("Evaluating.")
     with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
-        results_df = tests.test_del_rows((900, 500), [800, 700, 600])
-        results_df.plot(x="m", y=time_col_names, logy=True, title="Deleting rows")
+        # results_df = tests.test_del_rows((12, 10), [11])
+        # results_df.plot(x="m", y=time_col_names, logy=True, title="Deleting rows")
+        # plt.grid(True)
+
+        results_df = tests.test_add_rows((600, 500), [700, 800, 900])
+        results_df.plot(x="m", y=time_col_names, logy=True, title="Inserting rows")
         plt.grid(True)
         print(results_df)
-
-        # results_df = tests.test_add_rows((600, 500), [700, 800, 900])
-        # results_df.plot(x="m", y=time_col_names, logy=True, title="Inserting rows")
-        # plt.grid(True)
-        # print(results_df)
+        print(results_df[["l1_rn_Axb", "l1_rn_QR"]])
 
         # results_df = tests.test_del_cols((1000, 900), [800, 700, 600, 500, 400, 300, 200, 100])
         # results_df.plot(x="n", y=time_col_names, logy=True, title="Deleting columns")

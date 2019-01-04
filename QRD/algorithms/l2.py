@@ -1,9 +1,12 @@
 import numpy as np
 from typing import Tuple
 from algorithms.l1 import givens
+from algorithms.l1 import householder_vec as householder1
+import numba
 
 
-def householder(alpha: float, x: np.ndarray) -> Tuple[np.ndarray, float]:
+@numba.jit(nopython=True)
+def householder(alpha, x: np.ndarray) -> Tuple[np.ndarray, float]:
     """
     Computes Householder transformation as specified in supplied paper.
     :param alpha:
@@ -11,26 +14,45 @@ def householder(alpha: float, x: np.ndarray) -> Tuple[np.ndarray, float]:
     :return: v, tau.
     """
 
-    s = np.power(np.linalg.norm(x, ord=2), 2)
-    v = x
+    # As specified in the paper.
+    # s = np.sqrt(x.dot(x)) # np.linalg.norm(x, ord=2)
+    # s = s * s
+    # v = x
+    #
+    # if s == 0:
+    #     tau = 0
+    # else:
+    #     t = np.sqrt(alpha * alpha + s)
+    #
+    #     if alpha <= 0:
+    #         v_one = alpha - t
+    #     else:
+    #         v_one = -s / (alpha + 1)
+    #
+    #     tau = 2 * np.power(v_one, 2) / (s + np.power(v_one, 2))
+    #     v = v / v_one
+    #
+    # return v, tau
+
+    # With modifications.
+    alpha = x[0]
+    s = np.sqrt(x.dot(x))  # np.linalg.norm(x, ord=2)
+    s = s * s
+    v = x.copy()
 
     if s == 0:
         tau = 0
     else:
-        t = np.sqrt(alpha * alpha + s)
+        t = np.sqrt(alpha**2 + s)
+        v[0] = alpha - t if alpha <= 0 else -s / (alpha + t)
 
-        if alpha <= 0:
-            v_one = alpha - t
-        else:
-            v_one = -s / (alpha + 1)
-
-        tau = 2 * np.power(v_one, 2) / (s + np.power(v_one, 2))
-        v = v / v_one
+        tau = 2 * v[0]**2 / (s + v[0]**2)
+        v /= v[0]
 
     return v, tau
 
 
-#@numba.jit(nopython=False)
+@numba.jit(nopython=False)
 def qr_delete_rows(
         Q: np.ndarray,
         R: np.ndarray,
@@ -99,7 +121,7 @@ def qr_delete_rows(
     return Q[p:, p:], R_tilde, b[p:], resid
 
 
-#@numba.jit(nopython=False)
+@numba.jit(nopython=False)
 def qr_add_rows(
         Q: np.ndarray,
         R: np.ndarray,
@@ -189,7 +211,7 @@ def qr_add_rows(
     return Q_tilde, R_tilde, b_tilde, resid
 
 
-#@numba.jit(nopython=False)
+@numba.jit(nopython=False)
 def qr_delete_cols(
         Q: np.ndarray,
         R: np.ndarray,
@@ -252,7 +274,7 @@ def qr_delete_cols(
     return Q, R_tilde, resid
 
 
-#@numba.jit(nopython=False)
+@numba.jit(nopython=False)
 def qr_add_cols(
         Q: np.ndarray,
         R: np.ndarray,
