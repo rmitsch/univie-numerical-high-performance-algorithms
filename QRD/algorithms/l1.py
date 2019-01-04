@@ -351,14 +351,13 @@ def qr_add_col(
         R_tilde[:, k + 1:] = R[:, k:]
 
     R_tilde = np.triu(R_tilde)
-    resid = np.linalg.norm(d_tilde[n + 1:m], ord=2)
+    resid = np.linalg.norm(d_tilde[n:m], ord=2)
 
     ###################################
     # Algorithm 2.20 - compute Q_tilde.
     ###################################
 
     for i in np.arange(start=m-1, stop=k, step=-1):
-        c[i], s[i] = givens(u[i - 1], u[i])
         cs_matrix = np.asarray([[c[i], s[i]], [-s[i], c[i]]])
         Q[:, i - 1:i + 1] = Q[:, i - 1:i + 1] @ cs_matrix
 
