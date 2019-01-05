@@ -67,8 +67,8 @@ def update_measurements(
     results[key][method + "_time"] = time
 
     if compute_accuracy:
-        print(np.allclose(np.dot(Q_tilde_own, R_tilde_own), np.dot(Q_tilde, R_tilde)))
-        print(np.allclose(Q_tilde_own, Q_tilde), np.allclose(R_tilde_own, R_tilde))
+        # print(np.allclose(np.dot(Q_tilde_own, R_tilde_own), np.dot(Q_tilde, R_tilde)))
+        # print(np.allclose(Q_tilde_own, Q_tilde), np.allclose(R_tilde_own, R_tilde))
 
         try:
             results[key][method + "_rn_QR"] = alg1.compute_residual(

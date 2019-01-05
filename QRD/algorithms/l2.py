@@ -5,7 +5,7 @@ from algorithms.l1 import householder_vec as householder1
 import numba
 
 
-@numba.jit(nopython=True)
+# @numba.jit(nopython=True)
 def householder(alpha, x: np.ndarray) -> Tuple[np.ndarray, float]:
     """
     Computes Householder transformation as specified in supplied paper.
@@ -15,44 +15,44 @@ def householder(alpha, x: np.ndarray) -> Tuple[np.ndarray, float]:
     """
 
     # As specified in the paper.
-    # s = np.sqrt(x.dot(x)) # np.linalg.norm(x, ord=2)
-    # s = s * s
-    # v = x
-    #
-    # if s == 0:
-    #     tau = 0
-    # else:
-    #     t = np.sqrt(alpha * alpha + s)
-    #
-    #     if alpha <= 0:
-    #         v_one = alpha - t
-    #     else:
-    #         v_one = -s / (alpha + 1)
-    #
-    #     tau = 2 * np.power(v_one, 2) / (s + np.power(v_one, 2))
-    #     v = v / v_one
-    #
-    # return v, tau
-
-    # With modifications.
-    alpha = x[0]
-    s = np.sqrt(x.dot(x))  # np.linalg.norm(x, ord=2)
+    s = np.sqrt(x.dot(x)) # np.linalg.norm(x, ord=2)
     s = s * s
-    v = x.copy()
+    v = x
 
     if s == 0:
         tau = 0
     else:
-        t = np.sqrt(alpha**2 + s)
-        v[0] = alpha - t if alpha <= 0 else -s / (alpha + t)
+        t = np.sqrt(alpha * alpha + s)
 
-        tau = 2 * v[0]**2 / (s + v[0]**2)
-        v /= v[0]
+        if alpha <= 0:
+            v_one = alpha - t
+        else:
+            v_one = -s / (alpha + 1)
+
+        tau = 2 * np.power(v_one, 2) / (s + np.power(v_one, 2))
+        v = v / v_one
 
     return v, tau
 
+    # With modifications.
+    # alpha = x[0]
+    # s = np.sqrt(x.dot(x))  # np.linalg.norm(x, ord=2)
+    # s = s * s
+    # v = x.copy()
+    #
+    # if s == 0:
+    #     tau = 0
+    # else:
+    #     t = np.sqrt(alpha**2 + s)
+    #     v[0] = alpha - t if alpha <= 0 else -s / (alpha + t)
+    #
+    #     tau = 2 * v[0]**2 / (s + v[0]**2)
+    #     v /= v[0]
+    #
+    # return v, tau
 
-@numba.jit(nopython=False)
+
+# @numba.jit(nopython=False)
 def qr_delete_rows(
         Q: np.ndarray,
         R: np.ndarray,
@@ -70,7 +70,7 @@ def qr_delete_rows(
     :return:
     """
 
-    m, n = Q.shape[0], R.shape[1]
+    m, n = R.shape
     C = np.zeros((m, m))
     S = np.zeros((m, m))
 
@@ -81,26 +81,27 @@ def qr_delete_rows(
     W = Q[k:k + p, :]
 
     if k != 0:
-        b[p + 1:k + p] = b[:k - 1]
+        b[p:k + p] = b[:k - 1]
 
     d = Q.T @ b
 
     for i in np.arange(start=0, stop=p, step=1):
         for j in np.arange(start=m - 2, stop=i - 1, step=-1):
             C[i, j], S[i, j] = givens(W[i, j], W[i, j + 1])
-            cs_matrix = np.asarray([[C[i, j], C[i, j]], [-S[i, j], C[i, j]]])
+            cs_matrix = np.asarray([[C[i, j], S[i, j]], [-S[i, j], C[i, j]]])
 
-            W[i, j] = W[i, j] * C[i, j] - W[i, j] * S[i, j]
-            W[i + 1:p + 1, j:j + 2] = W[i + 1:p + 1, j:j + 2] @ cs_matrix
+            W[i, j] = W[i, j] * C[i, j] - W[i, j + 1] * S[i, j]
+            W[i + 1:, j:j + 2] = W[i + 1:, j:j + 2] @ cs_matrix
 
-            if j <= n + i - 1 - 1:
+            if j <= n + i - 1:
                 R[j:j + 2, j - i + 1:] = cs_matrix.T @ R[j:j + 2, j - i + 1:]
 
             d[j:j + 2] = cs_matrix.T @ d[j:j + 2]
 
-    R_tilde = R[p:, :]
+    # Should be: R_tilde = R[p:]
+    R_tilde = R[:m - p]
     d_tilde = d[p:]
-    resid = np.linalg.norm(d_tilde[n:m - p], ord=2)
+    resid = np.linalg.norm(d_tilde[n:m - p + 1], ord=2)
 
     ###################################
     # Algorithm 2.4 - compute Q_tilde.
@@ -110,10 +111,9 @@ def qr_delete_rows(
         Q[p:p + k, :] = Q[:k, :]
 
     for i in np.arange(start=0, stop=p, step=1):
-        for j in np.arange(start=m - 2, stop=i, step=-11):
+        for j in np.arange(start=m - 2, stop=i, step=-1):
             # C[i, j], S[i, j] = givens(W[i, j], W[i, j + 1])
-            cs_matrix = np.asarray([[C[i, j], C[i, j]], [-S[i, j], C[i, j]]])
-
+            cs_matrix = np.asarray([[C[i, j], S[i, j]], [-S[i, j], C[i, j]]])
             Q[p:, j: j + 2] = Q[p:, j: j + 2] @ cs_matrix
 
     Q[p:, i] = S[i, i] * Q[p:, i] + C[i, i] * Q[p:, i + 1]
@@ -121,7 +121,7 @@ def qr_delete_rows(
     return Q[p:, p:], R_tilde, b[p:], resid
 
 
-@numba.jit(nopython=False)
+# @numba.jit(nopython=False)
 def qr_add_rows(
         Q: np.ndarray,
         R: np.ndarray,
@@ -141,7 +141,7 @@ def qr_add_rows(
     :return:
     """
 
-    m, n = Q.shape[0], R.shape[1]
+    m, n = R.shape
     V = np.zeros((m, m))
     tau = np.zeros((m,))
     p = U.shape[0]
@@ -174,8 +174,7 @@ def qr_add_rows(
             tau[j] * np.outer(V[:p, j], d_j) - \
             tau[j] * np.outer(V[:p, j], V[:p, j].T @ e[:p])
 
-    R_tilde = np.zeros((m + p, n))
-    R_tilde[:m] = R
+    R_tilde = np.append(R, np.zeros((p, n)), axis=0)
     d_tilde = np.zeros((m + p,))
     d_tilde[:m] = d[:, 0]
     d_tilde[m:] = e[:, 0]
@@ -190,9 +189,9 @@ def qr_add_rows(
     Q_tilde[m:, m:] = np.eye(p, p)
 
     if k != m:
-        insert_pos = k if k == 0 else k - 1
-        Q_tilde[insert_pos:insert_pos + p] = Q_tilde[m:m + p, :]
-        Q_tilde[insert_pos + p:] = Q_tilde[k:m, :]
+        Q_m = Q_tilde[m]
+        Q_tilde[k + 1:] = Q_tilde[k:m]
+        Q_tilde[k] = Q_m
 
     for j in np.arange(start=0, stop=n, step=1):
         Q_tilde_k = Q_tilde[:, j]
@@ -211,7 +210,7 @@ def qr_add_rows(
     return Q_tilde, R_tilde, b_tilde, resid
 
 
-@numba.jit(nopython=False)
+# @numba.jit(nopython=False)
 def qr_delete_cols(
         Q: np.ndarray,
         R: np.ndarray,
@@ -229,7 +228,7 @@ def qr_delete_cols(
     :return:
     """
 
-    m, n = Q.shape[0], R.shape[1]
+    m, n = R.shape
     V = np.zeros((m, m))
     tau = np.zeros((m,))
 
@@ -244,7 +243,7 @@ def qr_delete_cols(
         V[:p, j], tau[j] = householder(R[j, j], R[j + 1:j + p + 1, j])
         R[j, j] = R[j, j] - \
             tau[j] * R[j, j] - \
-            tau[j] * (V[:p, j].T @ R[j + 1:j + p + 1, j])
+            tau[j] * V[:p, j].T @ R[j + 1:j + p + 1, j]
 
         v = np.ones((p + 1, 1))
         v[1:, 0] = V[:p, j]
@@ -269,12 +268,12 @@ def qr_delete_cols(
         v[1:, 0] = V[:p, j]
 
         Q[:, j:j + p + 1] = Q[:, j:j + p + 1] - \
-            tau[j] * (Q[:, j:j + p + 1] @ v) @ v.T
+            tau[j] * ((Q[:, j:j + p + 1] @ v) @ v.T)
 
     return Q, R_tilde, resid
 
 
-@numba.jit(nopython=False)
+# @numba.jit(nopython=False)
 def qr_add_cols(
         Q: np.ndarray,
         R: np.ndarray,
@@ -295,7 +294,7 @@ def qr_add_cols(
     :return:
     """
 
-    m, n = Q.shape[0], R.shape[1]
+    m, n = R.shape
     C = np.zeros((m, m))
     S = np.zeros((m, m))
 
@@ -309,22 +308,23 @@ def qr_add_cols(
     for j in np.arange(start=0, stop=p, step=1):
         for i in np.arange(start=m - 1, stop=k + j - 1):
             C[i, j], S[i, j] = givens(U[i - 1, j], U[i, j])
-            cs_matrix = np.asarray([[C[i, j], C[i, j]], [-S[i, j], C[i, j]]])
-
+            cs_matrix = np.asarray([[C[i, j], S[i, j]], [-S[i, j], C[i, j]]])
             U[i - 1, j] = C[i, j] * U[i - 1, j] - S[i, j] * U[i, j]
 
-            if j + 1 < p:
+            if j < p - 1:
                 U[i - 1:i + 1, j + 1:p] = cs_matrix.T @ U[i - 1:i + 1, j + 1:p]
 
             if i <= n + j:
-                R[i - 1:i + 1, i - j:] = cs_matrix.T @ d_tilde[i - 1:i + 1]
+                R[i - 1:i + 1, i - j:] = cs_matrix.T @ R[i - 1:i + 1, i - j:]
 
             d_tilde[i - 1:i + 1] = cs_matrix.T @ d_tilde[i - 1:i + 1]
 
     R_tilde = np.zeros((m, p + n))
     if k == 0:
-        R_tilde[:, :p] = U
-        R_tilde[:, p:] = R
+        # R_tilde[:, :p] = U
+        # R_tilde[:, p:] = R
+        R_tilde[:, :n - p + 1] = R[:]
+        R_tilde[:, n - p:] = U
     elif k == n:
         R_tilde[:, :n] = R
         R_tilde[:, n:] = U
@@ -342,7 +342,7 @@ def qr_add_cols(
 
     for j in np.arange(start=0, stop=p, step=1):
         for i in np.arange(start=m - 1, stop=k + j - 1):
-            cs_matrix = np.asarray([[C[i, j], C[i, j]], [-S[i, j], C[i, j]]])
+            cs_matrix = np.asarray([[C[i, j], S[i, j]], [-S[i, j], C[i, j]]])
             Q[:, i - 1:i + 1] = Q[:, i - 1:i + 1] @ cs_matrix
 
     return Q, R_tilde, resid

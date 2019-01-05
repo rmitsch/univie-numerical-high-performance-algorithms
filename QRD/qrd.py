@@ -48,11 +48,6 @@ Qs:
 
 """
 
-# todo
-#   - presentation outline
-#   - search for indexing errors in l >= 1
-#   - gather run results
-
 
 def compile_functions_with_numba():
     """
@@ -87,23 +82,30 @@ if __name__ == '__main__':
     # Always: Q.shape = (m, m); R.shape = (m, n).
     logger.info("Evaluating.")
     with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', None):
-        # results_df = tests.test_del_rows((12, 10), [11])
+        # results_df = tests.test_del_rows((5, 3), [4])
         # results_df.plot(x="m", y=time_col_names, logy=True, title="Deleting rows")
         # plt.grid(True)
 
-        # results_df = tests.test_add_rows((6, 5), [7])
+        # results_df = tests.test_add_rows((4, 3), [5])
         # results_df.plot(x="m", y=time_col_names, logy=True, title="Inserting rows")
         # plt.grid(True)
 
         # results_df = tests.test_del_cols((5, 4), [3])
         # results_df.plot(x="n", y=time_col_names, logy=True, title="Deleting columns")
+        # print(results_df[["l1_rn_Axb", "l1_rn_QR"]])
         # plt.grid(True)
 
-        results_df = tests.test_add_cols((5, 3), [4])
-        results_df.plot(x="n", y=time_col_names, logy=True, title="Inserting columns")
-        print(results_df[["l1_rn_Axb", "l1_rn_QR"]])
+        # todo:
+        #   - fixes for l3.
+        #   - gather data.
+        #   - how to deal w/ sparse matrices?
+        #   - presentation w/ structure and coarse content.
+        results_df = tests.test_add_cols((4, 2), [3])
+        print(results_df[["l2_rn_Axb", "l2_rn_QR"]])
         print(results_df)
         exit()
+        # results_df.plot(x="n", y=time_col_names, logy=True, title="Inserting columns")
+        # print(results_df[["l1_rn_Axb", "l1_rn_QR"]])
         # plt.grid(True)
 
     logger.info("Plotting results.")
