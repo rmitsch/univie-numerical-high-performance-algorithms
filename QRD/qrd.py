@@ -75,6 +75,16 @@ if __name__ == '__main__':
     # print(a[2:4]) -> 2, 3
     # exit()
 
+    # todo:
+    #   - fixes for l3.
+    #   - add machine-independent efficiency as metric.
+    #   - last (simple) perf. improvements? e. g. ignoring d_tilde.
+    #   - gather data.
+    #   - how to deal w/ sparse matrices?
+    #   - presentation w/ structure and coarse content.
+    #       - ideas/method behind update algos?
+    #       - future work/alternatives?
+
     # Compile functions with numba so that compilation time is not included in performance measurements.
     logger.info("Compiling numba functions.")
     # compile_functions_with_numba()
@@ -86,7 +96,10 @@ if __name__ == '__main__':
         # results_df.plot(x="m", y=time_col_names, logy=True, title="Deleting rows")
         # plt.grid(True)
 
-        # results_df = tests.test_add_rows((4, 3), [5])
+        results_df = tests.test_add_rows((4, 3), [5])
+        print(results_df[["l3_rn_Axb", "l3_rn_QR"]])
+        print(results_df)
+        exit()
         # results_df.plot(x="m", y=time_col_names, logy=True, title="Inserting rows")
         # plt.grid(True)
 
@@ -95,15 +108,7 @@ if __name__ == '__main__':
         # print(results_df[["l1_rn_Axb", "l1_rn_QR"]])
         # plt.grid(True)
 
-        # todo:
-        #   - fixes for l3.
-        #   - gather data.
-        #   - how to deal w/ sparse matrices?
-        #   - presentation w/ structure and coarse content.
-        results_df = tests.test_add_cols((4, 2), [3])
-        print(results_df[["l2_rn_Axb", "l2_rn_QR"]])
-        print(results_df)
-        exit()
+        # results_df = tests.test_add_cols((4, 2), [3])
         # results_df.plot(x="n", y=time_col_names, logy=True, title="Inserting columns")
         # print(results_df[["l1_rn_Axb", "l1_rn_QR"]])
         # plt.grid(True)

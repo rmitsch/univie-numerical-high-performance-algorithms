@@ -139,6 +139,7 @@ def test_add_rows(size: tuple, row_sizes: list) -> pd.DataFrame:
     Q, R = scipy.linalg.qr(A)
 
     pbar = tqdm(total=n * sum(row_sizes))
+    pbar.close()
     for m_tilde in row_sizes:
         ################################################################
         # Generate data and compute correct results for solving Ax = b
@@ -205,6 +206,17 @@ def test_add_rows(size: tuple, row_sizes: list) -> pd.DataFrame:
             results, "l3", time.time() - start, A_tilde, Q_tilde_corr[:, :n], np.triu(R_tilde_corr[:n]),
             x_tilde, b_tilde_corr, Q_tilde[:, :n], np.triu(R_tilde[:n])
         )
+
+
+        print(A)
+        print(A_tilde)
+        print(Q_tilde_corr @ R_tilde_corr)
+        print(Q_tilde_corr)
+        print(Q_tilde)
+        print(R_tilde_corr)
+        print(R_tilde)
+
+
 
         pbar.update(m_tilde * n)
     pbar.close()
@@ -300,7 +312,6 @@ def test_add_cols(size: tuple, col_sizes: list) -> pd.DataFrame:
     Q, R = scipy.linalg.qr(A)
 
     pbar = tqdm(total=m * sum(col_sizes))
-    pbar.close()
     for n_tilde in col_sizes:
         ################################################################
         # Generate data and compute correct results for solving Ax = b
@@ -315,9 +326,6 @@ def test_add_cols(size: tuple, col_sizes: list) -> pd.DataFrame:
         p = n_tilde - n
         x_tilde = np.ones((n_tilde, 1))
         b_tilde_corr = np.dot(A_tilde, x_tilde)
-
-        print(A)
-        print(A_tilde)
 
         #################################################################
         # Remove rows.
@@ -364,10 +372,6 @@ def test_add_cols(size: tuple, col_sizes: list) -> pd.DataFrame:
             results, "l3", time.time() - start, A_tilde, Q_tilde_corr.T[:n + p].T, np.triu(R_tilde_corr[:n + p]),
             x_tilde, b_tilde_corr, Q_tilde.T[:n + p].T, np.triu(R_tilde[:n + p])
         )
-
-
-        print(Q_tilde_corr @ R_tilde_corr)
-        print(Q_tilde @ R_tilde)
 
         pbar.update(m * n_tilde)
 

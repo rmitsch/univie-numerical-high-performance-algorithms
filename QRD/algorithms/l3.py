@@ -3,9 +3,10 @@ from typing import Tuple
 from algorithms.l1 import givens, qr_decomposition
 from algorithms.l2 import householder
 import numba
+import scipy
 
 
-@numba.jit(nopython=False)
+# @numba.jit(nopython=False)
 def qr_add_rows(
         Q: np.ndarray,
         R: np.ndarray,
@@ -36,15 +37,15 @@ def qr_add_rows(
     # Algorithm 2.10 - compute R_tilde.
     ###################################
 
-    # Compute V.
-    for j in np.arange(start=0, stop=n, step=1):
-        V[:p, j], tau[j] = householder(R[j, j], U[:p, j])
-
     d = Q.T @ b
     for k in np.arange(start=0, stop=n, step=bs):
         jb = min(bs, n - k + 1)
 
-        if k + jb <= n:
+        # Factorize R for current block with alg. 2.8.
+        # V[:p, j], tau[j] = householder(R[j, j], U[:p, j])
+        V, tau = alg2_8(n, d, p, e, U, R, k, k + jb - 1)
+
+        if k + jb <= n - 1:
             T = np.zeros((jb, jb))
             for j in np.arange(start=k, stop=k + jb - 2, step=1):
                 if j == k:
@@ -113,7 +114,7 @@ def qr_add_rows(
     return Q_tilde, R_tilde, b_tilde, resid
 
 
-@numba.jit(nopython=False)
+# @numba.jit(nopython=False)
 def qr_add_cols(
         Q: np.ndarray,
         R: np.ndarray,
@@ -134,7 +135,7 @@ def qr_add_cols(
     :return:
     """
 
-    m, n = Q.shape[0], R.shape[1]
+    m, n = R.shape
     C = np.zeros((m, m))
     S = np.zeros((m, m))
 
@@ -144,30 +145,37 @@ def qr_add_cols(
 
     U = Q.T @ U
     d_tilde = Q.T @ b
+    Q_u = None
+
+    for j in np.arange(0, m):
+        for i in np.arange(1, n - p):
+            C[i, j], S[i, j] = givens(U[i - 1, j], U[i, j])
 
     if m > n + 1:
-        Q_u, R_u = qr_decomposition(U[n:m, :])
-        d_tilde[n :m] = Q_u.T @ d_tilde[n:m]
+        Q_u, R_u = scipy.linalg.qr(U[n:m, :])
+        d_tilde[n:m] = Q_u.T @ d_tilde[n:m]
 
-    if k <= n:
-        for j in np.arange(start=0, stop=p , step=1):
+    if k <= n - 1:
+        for j in np.arange(start=0, stop=p, step=1):
             upfirst = n - 1
-            for i in np.arange(start=n + j, stop=j, step=-1):
-                C[i, j], S[i, j] = givens(U[i - 1, j], U[i, j])
-                cs_matrix = np.asarray([[C[i, j], C[i, j]], [-S[i, j], C[i, j]]])
+            for i in np.arange(start=n + j - 2, stop=j, step=-1):
+                # C[i, j], S[i, j] = givens(U[i - 1, j], U[i, j])
+                cs_matrix = np.asarray([[C[i, j], S[i, j]], [-S[i, j], C[i, j]]])
                 U[i - 1, j] = C[i, j] * U[i - 1, j] - S[i, j] * U[i, j]
 
                 if j < p - 1:
-                    U[i - 1:i + 1, j + 1:p] = cs_matrix.T @ U[i - 1:i + 1, j + 1:p]
+                    U[i - 1:i + 1, j + 1:] = cs_matrix.T @ U[i - 1:i + 1, j + 1:]
 
-                R[i - 1: i + 1, upfirst:n] = cs_matrix.T @ R[i - 1: i + 1, upfirst:n]
+                R[i - 1: i + 1, upfirst:] = cs_matrix.T @ R[i - 1: i + 1, upfirst:]
                 upfirst -= 1
                 d_tilde[i - 1:i + 1] = cs_matrix.T @ d_tilde[i - 1:i + 1]
 
     R_tilde = np.zeros((m, p + n))
     if k == 0:
-        R_tilde[:, :p] = U
-        R_tilde[:, p:] = R
+        # R_tilde[:, :p] = U
+        # R_tilde[:, p:] = R
+        R_tilde[:, :n] = R[:]
+        R_tilde[:, n:] = U
     elif k == n:
         R_tilde[:, :n] = R
         R_tilde[:, n:] = U
@@ -188,8 +196,55 @@ def qr_add_cols(
 
     if k <= n - 1:
         for j in np.arange(start=0, stop=p, step=1):
-            for i in np.arange(start=n + j, stop=j, step=-1):
-                cs_matrix = np.asarray([[C[i, j], C[i, j]], [-S[i, j], C[i, j]]])
+            for i in np.arange(start=n + j - 1, stop=j, step=-1):
+                cs_matrix = np.asarray([[C[i, j], S[i, j]], [-S[i, j], C[i, j]]])
                 Q[:, i - 1:i + 1] = Q[:, i - 1:i + 1] @ cs_matrix
 
     return Q, R_tilde, resid
+
+
+def alg2_8(
+        n: int, d: np.ndarray, p: int, e: np.ndarray, U: np.ndarray, R: np.ndarray, start: int, stop: int
+):
+    """
+    R factorization for restricted block according to algorithm 2.8.
+    :param n:
+    :param d:
+    :param p:
+    :param e:
+    :param U:
+    :param R:
+    :param start:
+    :param stop:
+    :return:
+    """
+    
+    V = np.zeros((p, n))
+    tau = np.zeros((n,))
+
+    R_j = None
+    for j in np.arange(start=start, stop=stop, step=1):
+        V[:p, j], tau[j] = householder(R[j, j], U[:p, j])
+
+        R_j = R[j, j + 1:]
+        R[j, j:] = \
+            (1 - tau[j]) * R[j, j:] - \
+            tau[j] * V[:p, j].T @ U[:p, j:]
+
+        if j < n - 1:
+            U[:p, j + 1:] = U[:p, j + 1:] - \
+                            tau[j] * np.outer(V[:p, j], R_j) - \
+                            tau[j] * np.outer(V[:p, j], V[:p, j].T @ U[:p, j + 1:])
+
+        d_j = d[j]
+        d[j] = \
+            (1 - tau[j]) * d[j] - \
+            tau[j] * (V[:p, j].T @ e[:p])
+
+        e[:p] = e[:p] - \
+                tau[j] * np.outer(V[:p, j], d_j) - \
+                tau[j] * np.outer(V[:p, j], V[:p, j].T @ e[:p])
+
+    # R_tilde = np.append(R, np.zeros((p, n)), axis=0)
+
+    return V, tau
