@@ -9,49 +9,6 @@ import utils
 from typing import Tuple
 
 
-def test_generation_from_scratch(sizes: list) -> pd.DataFrame:
-    """
-    Tests generation of Q, R from scratch with a variety of sizes.
-    :param sizes:
-    :return:
-    """
-    results = {}
-
-    pbar = tqdm(total=np.sum(m * n for m, n in sizes))
-    for size in sizes:
-        ################################################################
-        # Generate data and compute correct results for solving Ax = b
-        # with x being a vector of ones..
-        #################################################################
-
-        m, n = size
-        A = np.random.rand(m, n)
-        x = np.ones((n, 1))
-        b = np.dot(A, x)
-
-        #################################################################
-        # Decompose A in Q and R.
-        #################################################################
-
-        # With numpy.
-        start = time.time()
-        Q_corr, R_corr = scipy.linalg.qr(A)
-        duration_lib = time.time() - start
-
-        # With own implementation..
-        start = time.time()
-        Q, R = alg1.qr_decomposition(A)
-        duration_own = time.time() - start
-        utils.update_measurements(
-            results, "l2", time.time() - start, A, Q_corr[:, :n], np.triu(R[:n]), x, b, Q[:, :n], np.triu(R[:n])
-        )
-
-        pbar.update(m * n)
-    pbar.close()
-
-    return pd.DataFrame.from_dict(results, orient="index")
-
-
 def test_del_rows(size: tuple, row_sizes: list) -> pd.DataFrame:
     """
     Tests deletion of rows.
@@ -94,8 +51,8 @@ def test_del_rows(size: tuple, row_sizes: list) -> pd.DataFrame:
         start = time.time()
         Q_tilde, R_tilde = scipy_qr_update.qr_delete(Q, R, k=0, p=p, which="row")
         utils.update_measurements(
-            results, "scipy_update", time.time() - start, A_tilde, Q_tilde_corr[:, :n],
-            np.triu(R_tilde_corr[:n]), x_tilde, b_tilde_corr, Q_tilde[:, :n], np.triu(R_tilde[:n])
+            results, "scipy_update", time.time() - start, A, A_tilde, x_tilde, b_tilde_corr,
+            Q_tilde[:, :n], np.triu(R_tilde[:n]), op="del_rows", p=p, k=0
         )
 
         # With own L1 implementation.
@@ -104,8 +61,8 @@ def test_del_rows(size: tuple, row_sizes: list) -> pd.DataFrame:
         for i in range(0, p):
             Q_tilde, R_tilde, b_tilde, residual = alg1.qr_delete_row(Q_tilde, R_tilde, b_tilde, k=0)
         utils.update_measurements(
-            results, "l1", time.time() - start, A_tilde, Q_tilde_corr[:, :n], np.triu(R_tilde_corr[:n]),
-            x_tilde, b_tilde_corr, Q_tilde[:, :n], np.triu(R_tilde[:n])
+            results, "l1", time.time() - start, A, A_tilde, x_tilde, b_tilde_corr, Q_tilde[:, :n], np.triu(R_tilde[:n]),
+            op="del_rows", p=p, k=0
         )
 
         # With own L2 implementation.
@@ -113,8 +70,8 @@ def test_del_rows(size: tuple, row_sizes: list) -> pd.DataFrame:
         start = time.time()
         Q_tilde, R_tilde, b_tilde, residual = alg2.qr_delete_rows(Q_input, R_input, b, p=p, k=0)
         utils.update_measurements(
-            results, "l2", time.time() - start, A_tilde, Q_tilde_corr[:, :n], np.triu(R_tilde_corr[:n]),
-            x_tilde, b_tilde_corr, Q_tilde[:, :n], np.triu(R_tilde[:n])
+            results, "l2", time.time() - start, A, A_tilde, x_tilde, b_tilde_corr, Q_tilde[:, :n], np.triu(R_tilde[:n]),
+            op="del_rows", p=p, k=0
         )
 
         pbar.update(m_tilde * n)
@@ -139,7 +96,6 @@ def test_add_rows(size: tuple, row_sizes: list) -> pd.DataFrame:
     Q, R = scipy.linalg.qr(A)
 
     pbar = tqdm(total=n * sum(row_sizes))
-    pbar.close()
     for m_tilde in row_sizes:
         ################################################################
         # Generate data and compute correct results for solving Ax = b
@@ -169,8 +125,8 @@ def test_add_rows(size: tuple, row_sizes: list) -> pd.DataFrame:
         Q_tilde, R_tilde = scipy_qr_update.qr_insert(Q, R, k=m, u=U, which="row")
         # print(np.allclose(np.dot(Q_tilde_corr, R_tilde_corr), np.dot(Q_tilde_update, R_tilde_update)))
         utils.update_measurements(
-            results, "scipy_update", time.time() - start, A_tilde, Q_tilde_corr[:, :n],
-            np.triu(R_tilde_corr[:n]), x_tilde, b_tilde_corr, Q_tilde[:, :n], np.triu(R_tilde[:n])
+            results, "scipy_update", time.time() - start, A, A_tilde, x_tilde, b_tilde_corr, Q_tilde[:, :n],
+            np.triu(R_tilde[:n]), op="add_rows", p=m_tilde - m, k=m
         )
 
         # With own L1 implementation.
@@ -181,8 +137,8 @@ def test_add_rows(size: tuple, row_sizes: list) -> pd.DataFrame:
                 Q_tilde, R_tilde, u=U[i - m], b=b_tilde, mu=b_tilde_corr[i:][0], k=m
             )
         utils.update_measurements(
-            results, "l1", time.time() - start, A_tilde, Q_tilde_corr[:, :n], np.triu(R_tilde_corr[:n]),
-            x_tilde, b_tilde_corr, Q_tilde[:, :n], np.triu(R_tilde[:n])
+            results, "l1", time.time() - start, A, A_tilde, x_tilde, b_tilde_corr, Q_tilde[:, :n], np.triu(R_tilde[:n]),
+            op="add_rows", p=m_tilde - m, k=m
         )
 
         # With own L2 implementation.
@@ -192,8 +148,8 @@ def test_add_rows(size: tuple, row_sizes: list) -> pd.DataFrame:
             Q_input, R_input, U=U, b=b, e=b_tilde_corr[m:m_tilde], k=m
         )
         utils.update_measurements(
-            results, "l2", time.time() - start, A_tilde, Q_tilde_corr[:, :n], np.triu(R_tilde_corr[:n]),
-            x_tilde, b_tilde_corr, Q_tilde[:, :n], np.triu(R_tilde[:n])
+            results, "l2", time.time() - start, A, A_tilde, x_tilde, b_tilde_corr, Q_tilde[:, :n], np.triu(R_tilde[:n]),
+            op="add_rows", p=m_tilde - m, k=m
         )
 
         # With own L3 implementation.
@@ -203,20 +159,9 @@ def test_add_rows(size: tuple, row_sizes: list) -> pd.DataFrame:
             Q_input, R_input, U=U, b=b, e=b_tilde_corr[m:m_tilde], k=m
         )
         utils.update_measurements(
-            results, "l3", time.time() - start, A_tilde, Q_tilde_corr[:, :n], np.triu(R_tilde_corr[:n]),
-            x_tilde, b_tilde_corr, Q_tilde[:, :n], np.triu(R_tilde[:n])
+            results, "l3", time.time() - start, A, A_tilde, x_tilde, b_tilde_corr, Q_tilde[:, :n], np.triu(R_tilde[:n]),
+            op="add_rows", p=m_tilde - m, k=m
         )
-
-
-        print(A)
-        print(A_tilde)
-        print(Q_tilde_corr @ R_tilde_corr)
-        print(Q_tilde_corr)
-        print(Q_tilde)
-        print(R_tilde_corr)
-        print(R_tilde)
-
-
 
         pbar.update(m_tilde * n)
     pbar.close()
@@ -266,8 +211,8 @@ def test_del_cols(size: tuple, col_sizes: list) -> pd.DataFrame:
         start = time.time()
         Q_tilde, R_tilde = scipy_qr_update.qr_delete(Q, R, k=0, p=p, which="col")
         utils.update_measurements(
-            results, "scipy_update", time.time() - start, A_tilde, Q_tilde_corr.T[:n_tilde].T,
-            np.triu(R_tilde_corr[:n_tilde]), x_tilde, b_tilde_corr, Q_tilde.T[:n_tilde].T, np.triu(R_tilde[:n_tilde])
+            results, "scipy_update", time.time() - start, A, A_tilde, x_tilde, b_tilde_corr, Q_tilde.T[:n_tilde].T,
+            np.triu(R_tilde[:n_tilde]), op="del_cols", p=p, k=0
         )
 
         # With own L1 implementation..
@@ -276,8 +221,8 @@ def test_del_cols(size: tuple, col_sizes: list) -> pd.DataFrame:
         for i in range(0, n - n_tilde):
             Q_tilde, R_tilde, residual = alg1.qr_delete_col(Q_tilde, R_tilde, b_tilde, k=0)
         utils.update_measurements(
-            results, "l1", time.time() - start, A_tilde, Q_tilde_corr.T[:n_tilde].T, np.triu(R_tilde_corr[:n_tilde]),
-            x_tilde, b_tilde_corr, Q_tilde.T[:n_tilde].T, np.triu(R_tilde[:n_tilde])
+            results, "l1", time.time() - start, A, A_tilde, x_tilde, b_tilde_corr, Q_tilde.T[:n_tilde].T,
+            np.triu(R_tilde[:n_tilde]), op="del_cols", p=p, k=0
         )
 
         # With own L2 implementation.
@@ -285,8 +230,8 @@ def test_del_cols(size: tuple, col_sizes: list) -> pd.DataFrame:
         start = time.time()
         Q_tilde, R_tilde, residual = alg2.qr_delete_cols(Q_input, R_input, b, p=p, k=0)
         utils.update_measurements(
-            results, "l2", time.time() - start, A_tilde, Q_tilde_corr.T[:n_tilde].T, np.triu(R_tilde_corr[:n_tilde]),
-            x_tilde, b_tilde_corr, Q_tilde.T[:n_tilde].T, np.triu(R_tilde[:n_tilde])
+            results, "l2", time.time() - start, A, A_tilde, x_tilde, b_tilde_corr, Q_tilde.T[:n_tilde].T,
+            np.triu(R_tilde[:n_tilde]), op="del_cols", p=p, k=0
         )
 
         pbar.update(m * n_tilde)
@@ -341,8 +286,8 @@ def test_add_cols(size: tuple, col_sizes: list) -> pd.DataFrame:
         start = time.time()
         Q_tilde, R_tilde = scipy_qr_update.qr_insert(Q, R, k=n, u=U, which="col")
         utils.update_measurements(
-            results, "scipy_update", time.time() - start, A_tilde, Q_tilde_corr.T[:n + p].T,
-            np.triu(R_tilde_corr[:n + p]), x_tilde, b_tilde_corr, Q_tilde.T[:n + p].T, np.triu(R_tilde[:n + p])
+            results, "scipy_update", time.time() - start, A, A_tilde, x_tilde, b_tilde_corr, Q_tilde.T[:n + p].T,
+            np.triu(R_tilde[:n + p]), op="add_cols", p=p, k=n
         )
 
         # With own L1 implementation.
@@ -351,8 +296,8 @@ def test_add_cols(size: tuple, col_sizes: list) -> pd.DataFrame:
         for i in range(0, p):
             Q_tilde, R_tilde, residual = alg1.qr_add_col(Q_tilde, R_tilde, u=U[:, i], b=b, k=n)
         utils.update_measurements(
-            results, "l1", time.time() - start, A_tilde, Q_tilde_corr.T[:n + p].T, np.triu(R_tilde_corr[:n + p]),
-            x_tilde, b_tilde_corr, Q_tilde.T[:n + p].T, np.triu(R_tilde[:n + p])
+            results, "l1", time.time() - start, A, A_tilde, x_tilde, b_tilde_corr, Q_tilde.T[:n + p].T,
+            np.triu(R_tilde[:n + p]), op="add_cols", p=p, k=n
         )
 
         # With own L2 implementation.
@@ -360,8 +305,8 @@ def test_add_cols(size: tuple, col_sizes: list) -> pd.DataFrame:
         start = time.time()
         Q_tilde, R_tilde, residual = alg2.qr_add_cols(Q_input, R_input, U=U, p=p, b=b, k=0)
         utils.update_measurements(
-            results, "l2", time.time() - start, A_tilde, Q_tilde_corr.T[:n + p].T, np.triu(R_tilde_corr[:n + p]),
-            x_tilde, b_tilde_corr, Q_tilde.T[:n + p].T, np.triu(R_tilde[:n + p])
+            results, "l2", time.time() - start, A, A_tilde, x_tilde, b_tilde_corr, Q_tilde.T[:n + p].T,
+            np.triu(R_tilde[:n + p]), op="add_cols", p=p, k=n
         )
 
         # With own L3 implementation.
@@ -369,8 +314,8 @@ def test_add_cols(size: tuple, col_sizes: list) -> pd.DataFrame:
         start = time.time()
         Q_tilde, R_tilde, residual = alg3.qr_add_cols(Q_input, R_input, U=U, p=p, b=b, k=0)
         utils.update_measurements(
-            results, "l3", time.time() - start, A_tilde, Q_tilde_corr.T[:n + p].T, np.triu(R_tilde_corr[:n + p]),
-            x_tilde, b_tilde_corr, Q_tilde.T[:n + p].T, np.triu(R_tilde[:n + p])
+            results, "l3", time.time() - start, A, A_tilde, x_tilde, b_tilde_corr, Q_tilde.T[:n + p].T,
+            np.triu(R_tilde[:n + p]), op="add_cols", p=p, k=n
         )
 
         pbar.update(m * n_tilde)
@@ -389,7 +334,9 @@ def compute_reference_QR(A: np.ndarray, results: dict):
     """
     start = time.time()
     Q, R = scipy.linalg.qr(A)
-    utils.update_measurements(results, "scipy_scratch", time.time() - start, A, compute_accuracy=False)
+    utils.update_measurements(
+        results, "scipy_scratch", time.time() - start, A, A, compute_accuracy=False, op="scratch"
+    )
 
     return Q, R
 
@@ -410,8 +357,8 @@ def compute_own_QR(
     start = time.time()
     Q_tilde, R_tilde = alg1.qr_decomposition(A)
     utils.update_measurements(
-        results, "l2_scratch", time.time() - start, A, Q_prime[:, :n], np.triu(R_prime[:n]),
-        x_prime, b_prime, Q_tilde[:, :n], np.triu(R_tilde[:n])
+        results, "l2_scratch", time.time() - start, A, A,
+        x_prime, b_prime, Q_tilde[:, :n], np.triu(R_tilde[:n]), op="scratch"
     )
 
     return Q_tilde, R_tilde
