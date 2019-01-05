@@ -46,6 +46,7 @@ def qr_add_rows(
         V, tau = alg2_8(n, d, p, e, U, R, k, k + jb - 1)
 
         if k + jb <= n - 1:
+            print("TRAILING")
             T = np.zeros((jb, jb))
             for j in np.arange(start=k, stop=k + jb - 2, step=1):
                 if j == k:
@@ -218,7 +219,7 @@ def alg2_8(
     :param stop:
     :return:
     """
-    
+
     V = np.zeros((p, n))
     tau = np.zeros((n,))
 

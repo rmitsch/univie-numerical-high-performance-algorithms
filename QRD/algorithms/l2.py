@@ -142,9 +142,9 @@ def qr_add_rows(
     """
 
     m, n = R.shape
-    V = np.zeros((m, m))
-    tau = np.zeros((m,))
     p = U.shape[0]
+    V = np.zeros((p, n))
+    tau = np.zeros((m,))
 
     ###################################
     # Algorithm 2.8 - compute R_tilde.
